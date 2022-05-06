@@ -11,6 +11,9 @@ typedef struct card Card;
 const char suits[] = {'C', 'D', 'H', 'S'};
 char ranks[] = {'A', '2', '3', '4', '5', '6', '7', '8', '9', 'T', 'J', 'Q', 'K'};
 
+//Array consisting of the initial number of cards turned face down;
+int facedown[7];
+
 Card *head = NULL;
 // Foundations
 Card *foundations[4];
@@ -104,9 +107,15 @@ void *save_cards(Card *deck, char* filename){
     fclose(ptr);
 }
 
+void update_facedown(int index){
+    if(facedown[index] != 0)
+        facedown[index]--;
+}
+
 void error_message(){
     printf("\nInvalid move..!\n");
 }
+
 
 // Helper method for interleave_shuffle
 Card *split_deck(Card *deck, int amount){
@@ -336,9 +345,7 @@ void move(const char *command, int strlen) {
             error_message();
             return;
     }
-
 }
-
 
 void show(){
     Card *temp = head;
@@ -408,9 +415,24 @@ void print_gamestate(){
     for (int i = 0; i < max_length; ++i) {
         printf("\n\t");
         for (int j = 0; j < sizeof(placeholder) / sizeof(placeholder[0]); ++j) {
-            if (placeholder[j]->next != NULL){
+            //Checks that next card is not the last card
+            if (placeholder[j]->next != columns[j]) {
                 placeholder[j] = placeholder[j]->next;
-                printf("%c%c\t",placeholder[j]->rank, placeholder[j]->suit);
+                //checks that the facedown cards has been turned or not
+                if(facedown[j] >= i + 1){
+                    //checks whether a card is supposed to be turned
+                    if(facedown[j] == i + 1 && placeholder[j]->next == columns[j]) {
+                        //Decrements the amount of facedown cards for the given column.
+                        update_facedown(j);
+                        printf("%c%c\t", placeholder[j]->rank, placeholder[j]->suit);
+                    }
+                    else
+                        //prints facedown card
+                        printf("[]\t");
+                }
+                else
+                    //if we are past the facedown cards just print the card if there is a nextcard
+                    printf("%c%c\t", placeholder[j]->rank, placeholder[j]->suit);
             }
             else
                 printf("  \t");
@@ -446,6 +468,7 @@ void setup_columns_foundations(){
     }
     for (int i = 0; i < 7; ++i) {
         columns[i] = new_card('C', i + 1 + '0'); //dummy card
+        facedown[i] = i;
     }
 }
 
@@ -478,19 +501,19 @@ int main() {
 
 //test for move method
 
-//setup_columns_foundations();
-//    Card *tempCard = new_card('K','H');
-//    columns[4]->next = tempCard;
-//    tempCard->prev = columns[4];
-//    Card *tempcard2 = new_card('A','H');
-//    columns[0]->next = tempcard2;
-//    tempcard2->prev = columns[0];
-//    print_gamestate();
-//    char moveF[] = "C5:KH->C3  ";
-//    move(moveF, find_string_length(moveF));
-//    char moveE[] = "C1->F4 ";
-//    move(moveE, find_string_length(moveE));
-//    print_gamestate();
+setup_columns_foundations();
+   Card *tempCard = new_card('K','H');
+    columns[4]->next = tempCard;
+    tempCard->prev = columns[4];
+    Card *tempcard2 = new_card('A','H');
+    columns[0]->next = tempcard2;
+    tempcard2->prev = columns[0];
+    print_gamestate();
+    char moveF[] = "C5:KH->C3  ";
+    move(moveF, find_string_length(moveF));
+    char moveE[] = "C1->F4 ";
+    move(moveE, find_string_length(moveE));
+    print_gamestate();
 
 //   system("cls"); Clears console
     //Test for show method
