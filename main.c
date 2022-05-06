@@ -10,14 +10,14 @@ typedef struct card Card;
 // Array of the different suits, Clubs, Diamonds, Hearts and Spades
 const char suits[] = {'C', 'D', 'H', 'S'};
 char ranks[] = {'A', '2', '3', '4', '5', '6', '7', '8', '9', 'T', 'J', 'Q', 'K'};
+
+Card *head = NULL;
 // Foundations
 Card *foundations[4];
 
 //Columns
 Card *columns[7];
 
-//Head for initial linked list
-Card *head = NULL;
 
 struct card {
     Card *prev;
@@ -37,17 +37,19 @@ Card *new_card(char rank, char suit){
 }
 Card *default_deck(){
     //Initialize deck, with a dummy bottom card
-    Card *deck = new_card('B', 'B');
-    Card *prev = deck;
+    Card *head = new_card('B', 'B');
+    Card *current = head;
     for (int suit = 0; suit < 4; suit++) {
         for (int rank = 0; rank < 13; rank++) {
-            Card *card = new_card(ranks[rank], suits[suit]);
-            prev->next = card;
-            card->prev = prev;
-            prev = card;
+            Card *newCard = new_card(ranks[rank], suits[suit]);
+            current->next = newCard;
+            head->prev = newCard;
+            newCard->prev = current;
+            newCard->next = head;
+            current = newCard;
         }
     }
-    return deck;
+    return head;
 }
 
 //Still needs work - currently only takes input file and prints content to terminal
@@ -62,9 +64,8 @@ Card *load_deck(char* filename){
     }
 
     // Add dummy card to bottom
-    Card *deck = new_card('B', 'B');
-    Card *prev = deck;
-    head = deck;
+    Card *head = new_card('B', 'B');
+    Card *current = head;
 
     char input[3]; // char array to hold line characters for input
 
@@ -74,10 +75,12 @@ Card *load_deck(char* filename){
             ch = fgetc(ptr);
             input[i] = ch;
         }
-        Card *card = new_card(input[0], input[1]);
-        prev->next = card;
-        card->prev = prev;
-        prev = card;
+        Card *newCard = new_card(input[0], input[1]);
+        current->next = newCard;
+        head->prev = newCard;
+        newCard->prev = current;
+        newCard->next = head;
+        current = newCard;
 
         // Checking if character is not EOF.
         // If it is EOF stop reading.
@@ -85,7 +88,7 @@ Card *load_deck(char* filename){
 
     // Closing the file
     fclose(ptr);
-    return deck;
+    return head;
 }
 void *save_cards(Card *deck, char* filename){
     FILE* ptr;
@@ -118,22 +121,21 @@ Card *split_deck(Card *deck, int amount){
     Card *holder = temp_deck->prev;
     holder->next = NULL;
     // [120][NULL] - [90][70] - [100][130]
+    temp_deck->prev->next = NULL;
     temp_deck->prev = NULL;
     // [120][NULL] - [NULL][70] - [100][130]
 
-    temp_deck->prev = NULL;
-    Card *part = temp_deck->next; // Variable for holding split part of deck
-    temp_deck->prev->next = NULL;
+    Card *part = temp_deck; // Variable for holding split part of deck
+    //temp_deck->prev = NULL;
     return part;
 }
 
 
 Card *interleave_shuffle(Card *deck, int amount){
-    Card *new_deck = deck; // Variable for holding interleaved deck
+    Card *new_deck = new_card('B', 'B');; // Variable for holding interleaved deck
     Card *part = split_deck(deck, amount);
 
     // Add dummy card to new card deck
-    new_deck->next = NULL; // Set next pointer to NULL
     deck = deck->next; // Deck now has first actual card
     //deck->prev = NULL;
 
@@ -475,29 +477,28 @@ int main() {
 //    printf("\t  \t  \t  \t  \t  \t  \t  \t\t\n");
 
 //test for move method
-/*
-setup_columns_foundations();
-    Card *tempCard = new_card('K','H');
-    columns[4]->next = tempCard;
-    tempCard->prev = columns[4];
-    card *tempcard2 = new_card('A','H');
-    columns[0]->next = tempcard2;
-    tempcard2->prev = columns[0];
-    print_gamestate();
-    char moveF[] = "C5:KH->C6  ";
-    move(moveF, find_string_length(moveF));
-    char moveE[] = "C1->F1";
-    move(moveE, find_string_length(moveE));
-    print_gamestate();
-    */
 
+//setup_columns_foundations();
+//    Card *tempCard = new_card('K','H');
+//    columns[4]->next = tempCard;
+//    tempCard->prev = columns[4];
+//    Card *tempcard2 = new_card('A','H');
+//    columns[0]->next = tempcard2;
+//    tempcard2->prev = columns[0];
+//    print_gamestate();
+//    char moveF[] = "C5:KH->C3  ";
+//    move(moveF, find_string_length(moveF));
+//    char moveE[] = "C1->F4 ";
+//    move(moveE, find_string_length(moveE));
+//    print_gamestate();
+
+//   system("cls"); Clears console
     //Test for show method
-    head = load_deck("C:\\DTU\\2-semester\\MaskinarProgrammering\\Yukon\\Yukon-G50\\Test_input.txt");
-    show();
+//    head = load_deck("C:\\DTU\\2-semester\\MaskinarProgrammering\\Yukon\\Yukon-G50\\Test_input.txt");
+//    show();
 
     // Test to print all cards, if no input file is provided
-    Card *deck = default_deck();
-
+//    Card *deck = default_deck();
 //    Card *play_deck = interleave_shuffle(deck, 20);
 //    do {
 //        play_deck = play_deck->next;
