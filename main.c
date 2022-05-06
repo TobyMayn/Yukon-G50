@@ -1,15 +1,15 @@
-#include <iostream>
+//#include <iostream>
 #include <string.h>
-#include <cstring>
+//#include <cstring>
 #include <stdio.h>
 #include <malloc.h>
+#include <stdbool.h>
 
 typedef struct card Card;
 
 // Array of the different suits, Clubs, Diamonds, Hearts and Spades
 const char suits[] = {'C', 'D', 'H', 'S'};
 char ranks[] = {'A', '2', '3', '4', '5', '6', '7', '8', '9', 'T', 'J', 'Q', 'K'};
-
 // Foundations
 Card *foundations[4];
 
@@ -492,17 +492,17 @@ setup_columns_foundations();
     */
 
     //Test for show method
-    head = load_deck("C:\\Users\\emil1\\OneDrive\\Documents\\GitHub\\YukonS-G50\\Test_input.txt");
+    head = load_deck("C:\\DTU\\2-semester\\MaskinarProgrammering\\Yukon\\Yukon-G50\\Test_input.txt");
     show();
 
     // Test to print all cards, if no input file is provided
     Card *deck = default_deck();
 
-    Card *play_deck = interleave_shuffle(deck, 20);
-    do {
-        play_deck = play_deck->next;
-        printf("%c%c\n",play_deck->rank, play_deck->suit);
-    }  while (play_deck->next != NULL);
+//    Card *play_deck = interleave_shuffle(deck, 20);
+//    do {
+//        play_deck = play_deck->next;
+//        printf("%c%c\n",play_deck->rank, play_deck->suit);
+//    }  while (play_deck->next != NULL);
 //
 //
 //    do {
