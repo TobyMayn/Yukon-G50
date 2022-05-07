@@ -120,63 +120,81 @@ void error_message(){
 // Helper method for interleave_shuffle
 Card *split_deck(Card *deck, int amount){
     Card *temp_deck = deck;
+
+    //First actual card in deck
+    temp_deck = temp_deck->next;
     // Loop to find spot to split
-    for (int i = 0; i <= amount; ++i) {
+    for (int i = 0; i < amount; ++i) {
         temp_deck = temp_deck->next;
     }
-    //Emil//Bliver prev og next ikke slettet for den samme node her? (115-117) Ville man ikke skulle gøre sådan her?
-    // [120][100] - [90][70] - [100][130]
 
-    Card *holder = temp_deck->prev;
-    holder->next = NULL;
-    // [120][NULL] - [90][70] - [100][130]
     temp_deck->prev->next = NULL;
     temp_deck->prev = NULL;
-    // [120][NULL] - [NULL][70] - [100][130]
 
     Card *part = temp_deck; // Variable for holding split part of deck
-    //temp_deck->prev = NULL;
     return part;
 }
 
 
-Card *interleave_shuffle(Card *deck, int amount){
-    Card *new_deck = new_card('B', 'B');; // Variable for holding interleaved deck
-    Card *part = split_deck(deck, amount);
-
-    // Add dummy card to new card deck
-    deck = deck->next; // Deck now has first actual card
-    //deck->prev = NULL;
-
-    while(deck->next != NULL){
-        if(part->next == NULL){
-            new_deck->next = deck;
-            deck->prev = new_deck;
-            return new_deck;
+Card *interleave_shuffle(Card *head, int amount){
+    Card *new_deck_head = new_card('B', 'B'); // Variable for holding interleaved deck
+    Card *new_deck = new_deck_head;
+    Card *part;
+    //If amount == 0, just return original deck
+    if (amount > 52) {
+        printf("Amount too large, pick lower amount!!");
+        return new_deck;
+    }
+    if (amount == 0 || amount == 52){
+        new_deck->next = head->next;
+        return new_deck;
+    }
+    else {
+        part = split_deck(head, amount);
         }
 
+    Card *deck_next = head->next;
+    deck_next->prev = NULL;
+    // Deck now has first actual card
+    //deck->prev = NULL;
+
+    while(deck_next != NULL && deck_next->rank != *"B"){
         // Add card from first pile to new_deck
-        new_deck->next = deck;
+        new_deck->next = new_card(deck_next->rank, deck_next->suit);
         new_deck->next->prev = new_deck;
         new_deck = new_deck->next;
 
+        // Update first pile pointer
+        deck_next = deck_next->next;
 
-        if(part->next != NULL){
-            //Add card from second pile to new_deck
-            new_deck->next = part;
+        //Check if card it is the last card in second pile
+        if(part->next == NULL || part->next->rank == *"B"){
+            //Add last card in part
+            new_deck->next = new_card(part->rank, part->suit);
             new_deck->next->prev = new_deck;
             new_deck = new_deck->next;
+
+            //Add the rest of the other cards in the first pile
+            new_deck->next = deck_next;
+            new_deck->next->prev = new_deck;
+            return new_deck_head;
         }
-        // Update pointers
-        deck->prev = NULL;
-        part->prev = NULL;
-        deck = deck->next;
-        part = part->next;
+
+
+        if(part->next != NULL && part->next->rank != *"B" ){
+            //Add card from second pile to new_deck
+            new_deck->next = new_card(part->rank, part->suit);
+            new_deck->next->prev = new_deck;
+            new_deck = new_deck->next;
+
+            // update second pile pointer
+            part = part->next;
+        }
     }
     new_deck->next = part;
-    part->prev = new_deck;
+    new_deck->next->prev = new_deck;
 
-    return new_deck;
+    return new_deck_head;
 }
 
 Card *random_shuffle(Card *deck){
@@ -501,19 +519,19 @@ int main() {
 
 //test for move method
 
-setup_columns_foundations();
-   Card *tempCard = new_card('K','H');
-    columns[4]->next = tempCard;
-    tempCard->prev = columns[4];
-    Card *tempcard2 = new_card('A','H');
-    columns[0]->next = tempcard2;
-    tempcard2->prev = columns[0];
-    print_gamestate();
-    char moveF[] = "C5:KH->C3  ";
-    move(moveF, find_string_length(moveF));
-    char moveE[] = "C1->F4 ";
-    move(moveE, find_string_length(moveE));
-    print_gamestate();
+//setup_columns_foundations();
+//   Card *tempCard = new_card('K','H');
+//    columns[4]->next = tempCard;
+//    tempCard->prev = columns[4];
+//    Card *tempcard2 = new_card('A','H');
+//    columns[0]->next = tempcard2;
+//    tempcard2->prev = columns[0];
+//    print_gamestate();
+//    char moveF[] = "C5:KH->C3  ";
+//    move(moveF, find_string_length(moveF));
+//    char moveE[] = "C1->F4 ";
+//    move(moveE, find_string_length(moveE));
+//    print_gamestate();
 
 //   system("cls"); Clears console
     //Test for show method
@@ -521,14 +539,14 @@ setup_columns_foundations();
 //    show();
 
     // Test to print all cards, if no input file is provided
-//    Card *deck = default_deck();
-//    Card *play_deck = interleave_shuffle(deck, 20);
-//    do {
-//        play_deck = play_deck->next;
-//        printf("%c%c\n",play_deck->rank, play_deck->suit);
-//    }  while (play_deck->next != NULL);
-//
-//
+    Card *deck = default_deck();
+
+    Card *play_deck = interleave_shuffle(deck, 27);
+    do {
+        play_deck = play_deck->next;
+        printf("%c%c\n",play_deck->rank, play_deck->suit);
+    }  while (play_deck->next != NULL && play_deck->next->rank != *"B");
+
 //    do {
 //        printf("%c%c\n",first_card->rank, first_card->suit);
 //        first_card = first_card->next;
