@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <malloc.h>
 #include <stdbool.h>
+#include <time.h>
 
 typedef struct card Card;
 
@@ -158,7 +159,7 @@ Card *interleave_shuffle(Card *head, int amount){
     // Deck now has first actual card
     //deck->prev = NULL;
 
-    while(deck_next != NULL && deck_next->rank != *"B"){
+    while(deck_next != NULL && deck_next->rank != 'B'){
         // Add card from first pile to new_deck
         new_deck->next = new_card(deck_next->rank, deck_next->suit);
         new_deck->next->prev = new_deck;
@@ -168,7 +169,7 @@ Card *interleave_shuffle(Card *head, int amount){
         deck_next = deck_next->next;
 
         //Check if card it is the last card in second pile
-        if(part->next == NULL || part->next->rank == *"B"){
+        if(part->next == NULL || part->next->rank == 'B'){
             //Add last card in part
             new_deck->next = new_card(part->rank, part->suit);
             new_deck->next->prev = new_deck;
@@ -181,7 +182,7 @@ Card *interleave_shuffle(Card *head, int amount){
         }
 
 
-        if(part->next != NULL && part->next->rank != *"B" ){
+        if(part->next != NULL && part->next->rank != 'B' ){
             //Add card from second pile to new_deck
             new_deck->next = new_card(part->rank, part->suit);
             new_deck->next->prev = new_deck;
@@ -198,7 +199,51 @@ Card *interleave_shuffle(Card *head, int amount){
 }
 
 Card *random_shuffle(Card *deck){
-    return deck;
+    int n = 2;
+    if(!deck->next){
+        return deck;
+    }
+    srand(time(NULL)); // Seeds rand() once, generating better random numbers.
+
+    Card *shuffled_deck = deck->next; // Add first card from deck to shuffled_deck
+    Card *current_card = deck->next->next; // Add second card from deck to current card
+    Card *next_card = deck->next->next->next; // Add third card from deck to next_card
+    shuffled_deck->next = NULL;
+    shuffled_deck->prev = NULL;
+
+    while (current_card->rank != 'B'){
+        Card *next_next_card = next_card->next;
+        int random = rand() % n;
+        if (random == 0){
+            shuffled_deck->prev = current_card;
+            current_card->next = shuffled_deck;
+            current_card->prev = NULL;
+            shuffled_deck = current_card;
+        }
+        else {
+            Card *placeholder = shuffled_deck;
+            for (int i = 1; i < random; ++i) {
+                placeholder = placeholder->next;
+            }
+            if (placeholder->next != NULL) {
+                placeholder->next->prev = current_card;
+            }
+            current_card->next = placeholder->next;
+            placeholder->next = current_card;
+            current_card->prev = placeholder;
+
+        }
+        current_card = next_card;
+        next_card = next_next_card; // Update next_card
+        n++;
+    }
+    //Add dummy card in start of shuffled deck
+    shuffled_deck->prev = deck;
+    deck->next = shuffled_deck;
+    deck->prev = NULL;
+    shuffled_deck = deck;
+
+    return shuffled_deck;
 }
 
 //method to find pile ie foundation or column, to start searching for a card.
@@ -540,13 +585,11 @@ int main() {
 
     // Test to print all cards, if no input file is provided
     Card *deck = default_deck();
-
-    Card *play_deck = interleave_shuffle(deck, 27);
+    Card *play_deck = random_shuffle(deck);
     do {
         play_deck = play_deck->next;
         printf("%c%c\n",play_deck->rank, play_deck->suit);
     }  while (play_deck->next != NULL && play_deck->next->rank != *"B");
-
 //    do {
 //        printf("%c%c\n",first_card->rank, first_card->suit);
 //        first_card = first_card->next;
