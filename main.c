@@ -147,12 +147,10 @@ Card *interleave_shuffle(Card *head, int amount){
         return new_deck;
     }
     if (amount == 0 || amount == 52){
-        new_deck->next = head->next;
-        return new_deck;
+        return head;
     }
-    else {
-        part = split_deck(head, amount);
-        }
+
+    part = split_deck(head, amount);
 
     Card *deck_next = head->next;
     deck_next->prev = NULL;
@@ -167,7 +165,7 @@ Card *interleave_shuffle(Card *head, int amount){
         // Update first pile pointer
         deck_next = deck_next->next;
 
-        //Check if card it is the last card in second pile
+        //Check if card is the last card in second pile
         if(part->next == NULL || part->next->rank == 'B'){
             //Add last card in part
             new_deck->next = new_card(part->rank, part->suit);
@@ -608,7 +606,7 @@ int main() {
 
     // Test to print all cards, if no input file is provided
     Card *deck = default_deck();
-    Card *play_deck = random_shuffle(deck);
+    Card *play_deck = interleave_shuffle(deck, 52);
     Card *prev = play_deck->prev;
     do {
         play_deck = play_deck->next;
