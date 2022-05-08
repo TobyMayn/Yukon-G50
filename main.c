@@ -15,7 +15,7 @@ char ranks[] = {'A', '2', '3', '4', '5', '6', '7', '8', '9', 'T', 'J', 'Q', 'K'}
 //Array consisting of the initial number of cards turned face down;
 int facedown[7];
 
-Card *head = NULL;
+Card *deck;
 // Foundations
 Card *foundations[4];
 
@@ -285,10 +285,11 @@ Card *get_pile(char rank,char suit){
 }
 
 Card *find_card(char rank,char suit,Card *ptr){
-    while(ptr->next != NULL && (ptr->rank != rank && ptr->suit != suit)){
+    Card *pile = ptr;
+    while(ptr->next != pile && (ptr->rank != rank && ptr->suit != suit)){
         ptr = ptr->next;
     }
-    if(ptr->rank != rank && ptr->suit != suit || ptr->prev == NULL){ //Checks if the specified card, is the dummy card + checking if the card exists
+    if(ptr->rank != rank && ptr->suit != suit || (ptr->prev == pile && ptr->next == pile)){ //Checks if the specified card, is the dummy card + checking if the card exists
         error_message();
         return NULL;
     }
@@ -431,14 +432,15 @@ void move(const char *command, int strlen) {
     }
 }
 
+//Showmethod only works on unshuffled deck
 void show(){
-    Card *temp = head;
+    Card *temp = deck;
     printf("\n\tC1\tC2\tC3\tC4\tC5\tC6\tC7\n");
     int i = 0;
     int j = 1;
     int f;
     char s[2];
-    while(temp->next != NULL){
+    while(temp->next->rank != 'B'){
         if(i % 7 == 0) {
             if(j % 2 == 0 && j != 1) {
                 f = j / 2;
@@ -465,7 +467,7 @@ int find_longest_list(){
     for (int i = 0; i < sizeof(columns) / sizeof(columns[0]); ++i) {
         int j = 0;
         temp = columns[i];
-        while(temp->next != NULL){
+        while(temp->next != columns[i]){
             temp = temp->next;
             j++;
         }
@@ -525,10 +527,10 @@ void print_gamestate(){
         f++;
         if (f % 2 == 0 && ((f/2) - 1) < (sizeof(foundations) / sizeof(foundations[0]))){
             foundation_temp = foundations[(f / 2) - 1];
-            while (foundation_temp->next != NULL) {
+            while (foundation_temp->next != foundations[(f / 2) - 1]) {
                 foundation_temp = foundation_temp->next;
             }
-            if(foundation_temp->prev == NULL){
+            if(foundation_temp->prev == foundations[(f / 2) - 1]){
                 printf("[]\tF%c",(f / 2) + '0');
             }else{
                 printf("%c%c\t%c%c",foundation_temp->rank,foundation_temp->suit,foundations[(f / 2) - 1]->rank,foundations[(f / 2) - 1]->suit);
@@ -546,12 +548,49 @@ const char* get_input() {
     return input;
 }
 
+void distribute_cards(Card* play_deck){
+    bool distributed = false;
+    Card *temp;
+    Card *column_temp;
+
+    if(!distributed){
+        int pile_lengths[7] = {1,6,7,8,9,10,11};
+
+        for (int i = 0; play_deck->next->rank != 'B'; ++i) {
+            for (int j = 0; j < sizeof(pile_lengths) / sizeof(pile_lengths[0]); ++j) {
+                if(pile_lengths[j] > i && play_deck->next->rank != 'B') {
+                    play_deck = play_deck->next;
+                    temp = play_deck;
+                    column_temp = columns[j];
+                    while(column_temp->next->rank != 'C'){
+                        column_temp = column_temp->next;
+                    }
+                    //erasing node from play_deck
+                    play_deck = temp->prev;
+                    temp->prev->next = temp->next;
+                    temp->next->prev = temp->prev;
+
+                    column_temp->next = temp;
+                    temp->prev = column_temp;
+                    temp->next = columns[j];
+                }
+            }
+        }
+
+    }
+
+}
+
 void setup_columns_foundations(){
     for (int i = 0; i < 4; ++i) {
         foundations[i] = new_card('F', i + 1 +'0'); //dummy card
+        foundations[i]->prev = foundations[i];
+        foundations[i]->next = foundations[i];
     }
     for (int i = 0; i < 7; ++i) {
         columns[i] = new_card('C', i + 1 + '0'); //dummy card
+        columns[i]->prev = columns[i];
+        columns[i]->next = columns[i];
         facedown[i] = i;
     }
 }
@@ -568,51 +607,28 @@ int find_string_length(const char *string){
 
 int main() {
 
-//    setup_columns_foundations();
-//    Card *first_card = columns[0];
-//    Card *card  = new_card('A', 'C');
-//    first_card->next = card;
-//    //Test to show how it could be made in conole
-//    printf("\tC1\tC2\tC3\tC4\tC5\tC6\tC7\n\n");
-//    printf("\t%c%c\t[]\t[]\t[]\t[]\t[]\t[]\t\tF1\n", first_card->next->rank, first_card->next->suit);
-//    printf("\t  \t7H\t[]\t[]\t[]\t[]\t[]\t\t\n");
-//    printf("\t  \t  \t5H\t[]\t[]\t[]\t[]\t\tF2\n");
-//    printf("\t  \t  \t  \t6C\t[]\t[]\t[]\t\t\n");
-//    printf("\t  \t  \t  \t  \t6S\t[]\t[]\t\tF3\n");
-//    printf("\t  \t  \t  \t  \t  \tQC\t[]\t\t\n");
-//    printf("\t  \t  \t  \t  \t  \t  \tKH\t\tF4\n");
-//    printf("\t  \t  \t  \t  \t  \t  \t  \t\t\n");
-
-//test for move method
-
-//setup_columns_foundations();
-//   Card *tempCard = new_card('K','H');
-//    columns[4]->next = tempCard;
-//    tempCard->prev = columns[4];
-//    Card *tempcard2 = new_card('A','H');
-//    columns[0]->next = tempcard2;
-//    tempcard2->prev = columns[0];
-//    print_gamestate();
-//    char moveF[] = "C5:KH->C3  ";
-//    move(moveF, find_string_length(moveF));
-//    char moveE[] = "C1->F4 ";
-//    move(moveE, find_string_length(moveE));
-//    print_gamestate();
-
 //   system("cls"); Clears console
     //Test for show method
 //    head = load_deck("C:\\DTU\\2-semester\\MaskinarProgrammering\\Yukon\\Yukon-G50\\Test_input.txt");
 //    show();
 
     // Test to print all cards, if no input file is provided
-    Card *deck = default_deck();
-    Card *play_deck = interleave_shuffle(deck, 52);
+    deck = default_deck();
+    show();
+
+    Card *play_deck = interleave_shuffle(deck, 25);
     Card *prev = play_deck->prev;
+    setup_columns_foundations();
+    distribute_cards(play_deck);
+    print_gamestate();
+
     do {
         play_deck = play_deck->next;
         printf("%c%c\n",play_deck->rank, play_deck->suit);
     }  while (play_deck->next != NULL && play_deck->next->rank != *"B");
     printf("\nLast card is: %c%c\n First card is: %c%c", prev->rank, prev->suit, prev->next->rank, prev->next->suit);
+
+
 //    do {
 //        printf("%c%c\n",first_card->rank, first_card->suit);
 //        first_card = first_card->next;
