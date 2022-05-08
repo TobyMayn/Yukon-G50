@@ -548,16 +548,17 @@ const char* get_input() {
     return input;
 }
 
+//Distributes the cards on to the starting piles.
 void distribute_cards(Card* play_deck){
     bool distributed = false;
     Card *temp;
     Card *column_temp;
 
     if(!distributed){
-        int pile_lengths[7] = {1,6,7,8,9,10,11};
-
+        int pile_lengths[7] = {1,6,7,8,9,10,11}; //array determines how many cards should be placed in a column
         for (int i = 0; play_deck->next->rank != 'B'; ++i) {
             for (int j = 0; j < sizeof(pile_lengths) / sizeof(pile_lengths[0]); ++j) {
+                //if the right amount of cards have already been placed in a column, the following will iterate to the next column
                 if(pile_lengths[j] > i && play_deck->next->rank != 'B') {
                     play_deck = play_deck->next;
                     temp = play_deck;
@@ -576,7 +577,7 @@ void distribute_cards(Card* play_deck){
                 }
             }
         }
-
+        distributed = true;
     }
 
 }
