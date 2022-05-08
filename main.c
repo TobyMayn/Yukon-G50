@@ -157,7 +157,6 @@ Card *interleave_shuffle(Card *head, int amount){
     Card *deck_next = head->next;
     deck_next->prev = NULL;
     // Deck now has first actual card
-    //deck->prev = NULL;
 
     while(deck_next != NULL && deck_next->rank != 'B'){
         // Add card from first pile to new_deck
@@ -178,6 +177,14 @@ Card *interleave_shuffle(Card *head, int amount){
             //Add the rest of the other cards in the first pile
             new_deck->next = deck_next;
             new_deck->next->prev = new_deck;
+
+            // Update pointers for head and tail
+            Card *placeholder = new_deck_head;
+            for (int i = 0; i < 52; ++i) {
+                placeholder = placeholder->next;
+            }
+            new_deck_head->prev = placeholder;
+            placeholder->next = new_deck_head;
             return new_deck_head;
         }
 
@@ -194,6 +201,14 @@ Card *interleave_shuffle(Card *head, int amount){
     }
     new_deck->next = part;
     new_deck->next->prev = new_deck;
+
+    // Update pointers for head and tail
+    Card *placeholder = new_deck_head;
+    for (int i = 0; i < 52; ++i) {
+        placeholder = placeholder->next;
+    }
+    new_deck_head->prev = placeholder;
+    placeholder->next = new_deck_head;
 
     return new_deck_head;
 }
@@ -242,6 +257,14 @@ Card *random_shuffle(Card *deck){
     deck->next = shuffled_deck;
     deck->prev = NULL;
     shuffled_deck = deck;
+
+    // Update pointers for head and tail
+    Card *placeholder = shuffled_deck;
+    for (int i = 0; i < 52; ++i) {
+        placeholder = placeholder->next;
+    }
+    shuffled_deck->prev = placeholder;
+    placeholder->next = shuffled_deck;
 
     return shuffled_deck;
 }
@@ -586,10 +609,12 @@ int main() {
     // Test to print all cards, if no input file is provided
     Card *deck = default_deck();
     Card *play_deck = random_shuffle(deck);
+    Card *prev = play_deck->prev;
     do {
         play_deck = play_deck->next;
         printf("%c%c\n",play_deck->rank, play_deck->suit);
     }  while (play_deck->next != NULL && play_deck->next->rank != *"B");
+    printf("\nLast card is: %c%c\n First card is: %c%c", prev->rank, prev->suit, prev->next->rank, prev->next->suit);
 //    do {
 //        printf("%c%c\n",first_card->rank, first_card->suit);
 //        first_card = first_card->next;
