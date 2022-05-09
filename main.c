@@ -297,53 +297,46 @@ Card *find_card(char rank,char suit,Card *ptr){
 }
 
 //the foundations will not have a predefined suit. The suit of the foundation will be defined by the first card moved to it.
-bool move_to_foundation(Card *card, Card *toPile) {
+bool move_to_foundation(Card *card,Card *topilepos, Card *toPile) {
     bool possMove = false;
-    if(card->next != NULL)//checks if we're trying to move more than one card.
+    if(card->next->rank != 'C')//checks if we're trying to move more than one card.
         return possMove;
 
-    if (toPile->prev == NULL){//Checks if the foundation is empty.
+    if (toPile->next == toPile){//Checks if the foundation is empty.
         if(card->rank == ranks[0])//if the foundation is empty check if the card is an Ace.
             possMove = true;
     }else{
-        //find topcard in foundation
-        while(toPile->next != NULL){
-            toPile = toPile->next;
-        }
         int i = 0;
         while(ranks[i] != card->rank){ //Find the index for the cards rank.
             i++;
         }
 
-        if(ranks[i-1] == toPile->rank){//checks if the topcard is one rank less, than the card we with to move.
-            if(card->suit == toPile->suit)//checks for same suit.
+        if(ranks[i-1] == topilepos->rank){//checks if the topcard is one rank less, than the card we with to move.
+            if(card->suit == topilepos->suit)//checks for same suit.
                 possMove = true;
         }
     }
     return possMove;
 }
 
-bool valid_move(Card *card,Card *topile){
+bool valid_move(Card *cardToMove, Card *topilepos, Card *topile){
     bool valid = false;
     int i = 0;
 
     if(topile->rank == foundations[0]->rank){
-        return move_to_foundation(card,topile);
+        return move_to_foundation(cardToMove,topilepos,topile);
     }
 
-    while(topile->next != NULL){
-        topile = topile->next;
-    }
-    while(ranks[i] != card->rank){
+    while(ranks[i] != cardToMove->rank){
         i++;
     }
-    if(i < 12 && ranks[i+1] == topile->rank){
-        if(card->suit != topile->suit)
+    if(i < 12 && ranks[i+1] == topilepos->rank){
+        if(cardToMove->suit != topilepos->suit)
             valid = true;
     }
     if(i == 12){
         //checks if pile is empty for king move
-        if(topile->prev == NULL)
+        if(topile->next == topile)
             valid = true;
     }
     return valid;
@@ -369,7 +362,7 @@ void move_specific(const char *command,Card *pointer) {
     }
     //from this point we have found the card from a pile, and the pile it's supposed to go to.
     //now we check if the move is valid.
-    if(valid_move(pointer,to)){
+    if(valid_move(pointer,to,to)){
         //moves card from a stack
         Card *temp = pointer->prev;
         temp->next = NULL;
@@ -381,21 +374,23 @@ void move_specific(const char *command,Card *pointer) {
 
 
 void pile_to_pile(const char *command,Card *pointer) {
+    Card *from = pointer;
     Card *to = get_pile(command[4],command[5]);
+    Card *pile = to;
     if (to == NULL){
         error_message();
         return;
     }
 
-    while(pointer->next != NULL){
-        pointer = pointer->next;
+    while(from->next != pointer){
+        from = from->next;
     }
-    while(to->next != NULL){
+    while(to->next != pile){
         to = to->next;
     }
 
     Card *temp;
-    if(valid_move(pointer,to)){
+    if(valid_move(from,to,pile)){
         temp = pointer->prev;
         temp->next = NULL; //Dereferencing card from old list.
 
@@ -405,28 +400,33 @@ void pile_to_pile(const char *command,Card *pointer) {
 
 }
 
-void move(const char *command, int strlen) {
+int find_string_length(const char *string){
+    int size = 0;
+    for (int i = 0; i < strlen(string); ++i) {
+        if(string[i] != ' ') {
+            size++;
+        }
+    }
+    return size;
+}
+
+void move(const char *command) {
     Card *temp = get_pile(command[0], command[1]);//gets pointer of list to move from
     if (temp == NULL) {
         error_message();//if the get_pile method returns a null pointer we return to caller with error message
         return;
     }
+    int strlen = find_string_length(command);
+    printf("%d",strlen);
 
-    int type = 2;
-    if (strlen == 6)
-        type = 0;
-    else if (strlen == 9)
-        type = 1;
-
-
-    switch (type) {
-        case 0 :
+    switch (strlen) {
+        case 6 :
             pile_to_pile(command, temp);
             break;
-        case 1:
+        case 9:
             move_specific(command, temp);
             break;
-        case 2:
+        default:
             error_message();
             return;
     }
@@ -486,8 +486,8 @@ void print_gamestate(){
         placeholder[i] = columns[i];
     }
 
-    int max_length = find_longest_list();
-    if(max_length < 8)
+    int max_length = find_longest_list(); //finding the length of the longest list, to know how much to print to the console
+    if(max_length < 8) //if the length is less than 8, it is set to 8, so the foundations will be printed.
         max_length = 8;
 
     printf("\n");
@@ -497,7 +497,7 @@ void print_gamestate(){
     printf("\n");
     int f = 1;
     Card* foundation_temp;
-    //printing all cards in the column or and empty space if there is no card.
+    //printing one card at a time from each column. If there is no card, an empty space will be printed.
     for (int i = 0; i < max_length; ++i) {
         printf("\n\t");
         for (int j = 0; j < sizeof(placeholder) / sizeof(placeholder[0]); ++j) {
@@ -537,8 +537,6 @@ void print_gamestate(){
             }
         }
     }
-
-
 }
 
 const char* get_input() {
@@ -596,16 +594,6 @@ void setup_columns_foundations(){
     }
 }
 
-int find_string_length(const char *string){
-    int size = 0;
-    for (int i = 0; i < strlen(string); ++i) {
-        if(string[i] != ' ') {
-            size++;
-        }
-    }
-    return size;
-}
-
 int main() {
 
 //   system("cls"); Clears console
@@ -621,6 +609,8 @@ int main() {
     Card *prev = play_deck->prev;
     setup_columns_foundations();
     distribute_cards(play_deck);
+    print_gamestate();
+    move("C1->F1");
     print_gamestate();
 
     do {
@@ -640,8 +630,6 @@ int main() {
     //system("cls");
 
     //save_cards(deck, "C:\\DTU\\2-semester\\MaskinarProgrammering\\Yukon\\YukonS-G50\\Test1_input.txt");
-
-
 
     return 0;
 }
