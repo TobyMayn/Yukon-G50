@@ -7,6 +7,7 @@
 #include <time.h>
 
 typedef struct card Card;
+typedef struct moves Moves;
 
 // Array of the different suits, Clubs, Diamonds, Hearts and Spades
 const char suits[] = {'C', 'D', 'H', 'S'};
@@ -18,10 +19,10 @@ int facedown[7];
 Card *deck;
 // Foundations
 Card *foundations[4];
-
 //Columns
 Card *columns[7];
-
+//header pointing at moves struct, used in undo command
+Moves *latest;
 
 struct card {
     Card *prev;
@@ -29,7 +30,6 @@ struct card {
     char rank;
     char suit;
 };
-
 
 Card *new_card(char rank, char suit){
     Card *card = (Card *)malloc(sizeof(Card));
@@ -39,6 +39,31 @@ Card *new_card(char rank, char suit){
     card->suit = suit;
     return card;
 }
+
+struct moves {
+    Moves *prev;
+    char *command;
+};
+
+//moves will be implemented as a stack, hence why there is only a pointer to a prev node.
+Moves *new_move(char *command){
+    Moves *moves = (Moves *)malloc(sizeof(Moves));
+    moves->prev = NULL;
+    moves->command = command;
+    return moves;
+}
+
+void update_undo_header(char *command){
+    Moves *prev = latest;
+    latest = new_move(command);
+    latest->prev = prev;
+}
+
+Moves *initialize_undo(){
+    Moves *moves = new_move("UNDO");
+    return moves;
+}
+
 Card *default_deck(){
     //Initialize deck, with a dummy bottom card
     Card *head = new_card('B', 'B');
@@ -117,6 +142,72 @@ void error_message(){
     printf("\nInvalid move..!\n");
 }
 
+int find_string_length(const char *string){
+    int size = 0;
+    for (int i = 0; i < strlen(string); ++i) {
+        if(string[i] != ' ') {
+            size++;
+        }
+    }
+    return size;
+}
+
+//method to find pile ie foundation or column, to start searching for a card.
+//If the given pile doesn't exist the method will return a null pointer.
+Card *get_pile(char rank,char suit){
+    Card *temp = NULL;
+    for (int i = 0; i < ((sizeof(columns) / sizeof(columns[0])) + sizeof(foundations) / sizeof(foundations[0])) ; ++i) {
+        if (i >= 7){
+            if(foundations[i % 7]->rank == rank && foundations[i % 7]->suit == suit)
+                temp = foundations[i % 7];
+        }
+        else if(columns[i % 7]->rank == rank && columns[i % 7]->suit == suit){
+            temp = columns[i];
+            break;
+        }
+    }
+    return temp;
+}
+
+Card *find_card(char rank,char suit,Card *ptr){
+    Card *pile = ptr;
+    while(ptr->next != pile || (ptr->rank != rank && ptr->suit != suit)){
+        ptr = ptr->next;
+        if(ptr->rank == rank && ptr->suit == suit)
+            return ptr;
+    }
+    if(ptr->rank != rank && ptr->suit != suit || (ptr->prev == pile && ptr->next == pile)){ //Checks if the specified card, is the dummy card + checking if the card exists
+        error_message();
+        return NULL;
+    }
+    return ptr;
+}
+
+void move_bunch(Card *from, Card *frompile, Card *to, Card *topile){
+    Card *temp = from;
+
+    while(temp->next != frompile){
+        temp = temp->next;
+    }
+
+    from->prev->next = frompile;
+    frompile->prev = from->prev;
+
+    topile->prev = temp;
+    temp->next = topile;
+    from->prev = to;
+    to->next = from;
+}
+
+void move_card(Card *from,Card *to){
+    Card *temp = from;
+    temp->prev->next = temp->next;
+    temp->next->prev = temp->prev;
+
+    temp->next = to->next;
+    to->next = temp;
+    temp->prev = to;
+}
 
 // Helper method for interleave_shuffle
 Card *split_deck(Card *deck, int amount){
@@ -267,35 +358,42 @@ Card *random_shuffle(Card *deck){
     return shuffled_deck;
 }
 
-//method to find pile ie foundation or column, to start searching for a card.
-//If the given pile doesn't exist the method will return a null pointer.
-Card *get_pile(char rank,char suit){
-    Card *temp = NULL;
-    for (int i = 0; i < ((sizeof(columns) / sizeof(columns[0])) + sizeof(foundations) / sizeof(foundations[0])) ; ++i) {
-        if (i >= 7){
-            if(foundations[i % 7]->rank == rank && foundations[i % 7]->suit == suit)
-                temp = foundations[i % 7];
-        }
-        else if(columns[i % 7]->rank == rank && columns[i % 7]->suit == suit){
-            temp = columns[i];
-            break;
-        }
-    }
-    return temp;
-}
-
-Card *find_card(char rank,char suit,Card *ptr){
-    Card *pile = ptr;
-    while(ptr->next != pile || (ptr->rank != rank && ptr->suit != suit)){
-        ptr = ptr->next;
-        if(ptr->rank == rank && ptr->suit == suit)
-            return ptr;
-    }
-    if(ptr->rank != rank && ptr->suit != suit || (ptr->prev == pile && ptr->next == pile)){ //Checks if the specified card, is the dummy card + checking if the card exists
+void undo(){
+    if(latest->command == "UNDO"){
         error_message();
-        return NULL;
+        return;
+    }//checks for dummy card
+
+    char *command = latest->command;
+    Card *topile = get_pile(command[0],command[1]);
+
+    int strlen = find_string_length(command);
+
+    if(strlen == 9) {
+        Card *frompile = get_pile(command[7], command[8]);
+        Card *fromcard = find_card(command[3],command[4],frompile);
+        Card *tocard = topile;
+        while(tocard->next != topile) {
+            tocard = tocard->next;
+        }
+        move_bunch(fromcard,frompile,tocard,topile);
     }
-    return ptr;
+    else{
+        Card *frompile = get_pile(command[4],command[5]);
+        Card *from = frompile;
+        Card *to = topile;
+        while(from->next != frompile){
+            from = from->next;
+        }
+        while(to->next != topile){
+            to = to->next;
+        }
+        move_card(from,to);
+    }
+    //making the pointer point to the latest move command.
+    Moves *temp = latest;
+    latest = temp->prev;
+    free(temp); //deleting the node from memory.
 }
 
 //the foundations will not have a predefined suit. The suit of the foundation will be defined by the first card moved to it.
@@ -344,33 +442,7 @@ bool valid_move(Card *cardToMove, Card *topilepos, Card *topile){
     return valid;
 }
 
-void move_bunch(Card *from, Card *frompile, Card *to, Card *topile){
-    Card *temp = from;
-
-    while(temp->next != frompile){
-        temp = temp->next;
-    }
-
-    from->prev->next = frompile;
-    frompile->prev = from->prev;
-
-    topile->prev = temp;
-    temp->next = topile;
-    from->prev = to;
-    to->next = from;
-}
-
-void move_card(Card *from,Card *to){
-    Card *temp = from;
-    temp->prev->next = temp->next;
-    temp->next->prev = temp->prev;
-
-    temp->next = to->next;
-    to->next = temp;
-    temp->prev = to;
-}
-
-void move_specific(const char *command,Card *cardtomove) {
+void move_specific(char *command,Card *cardtomove) {
     Card *frompile = cardtomove;
     //checks if card exists in pile / list
     cardtomove = find_card(command[3], command[4], cardtomove);
@@ -394,13 +466,14 @@ void move_specific(const char *command,Card *cardtomove) {
     //now we check if the move is valid.
     if(valid_move(cardtomove, tonode, to)){
         move_bunch(cardtomove,frompile,tonode,to);
+        update_undo_header(command);
     }
     else
         error_message();
 }
 
 
-void pile_to_pile(const char *command,Card *pointer) {
+void pile_to_pile(char *command,Card *pointer) {
     Card *from = pointer;
     Card *to = get_pile(command[4],command[5]);
     Card *pile = to;
@@ -419,18 +492,9 @@ void pile_to_pile(const char *command,Card *pointer) {
     Card *temp;
     if(valid_move(from,to,pile)){
         move_card(from,to);
+        update_undo_header(command);
     }
 
-}
-
-int find_string_length(const char *string){
-    int size = 0;
-    for (int i = 0; i < strlen(string); ++i) {
-        if(string[i] != ' ') {
-            size++;
-        }
-    }
-    return size;
 }
 
 void move(const char *command) {
@@ -439,6 +503,11 @@ void move(const char *command) {
         error_message();//if the get_pile method returns a null pointer we return to caller with error message
         return;
     }
+    if(pile->next == pile){//checks if pile is empty
+        error_message();
+        return;
+    }
+
     int strlen = find_string_length(command);
 
     switch (strlen) {
@@ -623,6 +692,10 @@ int main() {
 //    head = load_deck("C:\\DTU\\2-semester\\MaskinarProgrammering\\Yukon\\Yukon-G50\\Test_input.txt");
 //    show();
 
+    latest = initialize_undo();
+
+    Moves *mower = new_move("UNDO");
+
     // Test to print all cards, if no input file is provided
     deck = default_deck();
     show();
@@ -632,8 +705,10 @@ int main() {
     setup_columns_foundations();
     distribute_cards(play_deck);
     print_gamestate();
-    printf("%c",columns[0]->rank);
+
     move("C1->F1");
+    print_gamestate();
+    undo();
     print_gamestate();
     move("F1->C2");
     print_gamestate();
