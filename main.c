@@ -145,7 +145,7 @@ void *save_cards(Card *deck, char* filename){
     do {
         deck = deck->next;
         fprintf(ptr,"%c%c\n", deck->rank, deck->suit);
-    }while(deck->next != NULL);
+    }while(deck->next->rank != 'B');
 
 
     // Closing the file
