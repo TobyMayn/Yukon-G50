@@ -5,6 +5,9 @@
 #include <malloc.h>
 #include <stdbool.h>
 #include <time.h>
+#include <stdlib.h>
+#include <limits.h>
+
 
 typedef struct card Card;
 typedef struct moves Moves;
@@ -16,7 +19,8 @@ char ranks[] = {'A', '2', '3', '4', '5', '6', '7', '8', '9', 'T', 'J', 'Q', 'K'}
 //Array consisting of the initial number of cards turned face down;
 int facedown[7];
 
-Card *deck;
+char *command_approver = "OK";
+bool play = false;
 // Foundations
 Card *foundations[4];
 //Columns
@@ -59,9 +63,12 @@ void update_undo_header(char *command){
     latest->prev = prev;
 }
 
-Moves *initialize_undo(){
-    Moves *moves = new_move("UNDO");
-    return moves;
+void initialize_undo(){
+    bool init = false;
+    if(!init) {
+        latest = new_move("UNDO");
+        init = true;
+    }
 }
 
 Card *default_deck(){
@@ -85,14 +92,13 @@ Card *default_deck(){
 Card *load_deck(char* filename){
     FILE* ptr;
     char ch;
-    char check_card[2];
     char check_cards[52][2];
     int n = 0;
 
     ptr = fopen(filename, "r");
 
     if (NULL == ptr) {
-        printf("File doesn't exist");
+        printf("File doesn't exist\n");
     }
 
     // Add dummy card to bottom
@@ -152,7 +158,7 @@ void update_facedown(int index){
 }
 
 void error_message(){
-    printf("\nInvalid move..!\n");
+    command_approver = "Invalid action..!";
 }
 
 int find_string_length(const char *string){
@@ -507,7 +513,8 @@ void pile_to_pile(char *command,Card *pointer) {
         move_card(from,to);
         update_undo_header(command);
     }
-
+    else
+        error_message();
 }
 
 void move(const char *command) {
@@ -537,7 +544,7 @@ void move(const char *command) {
 }
 
 //Showmethod only works on unshuffled deck
-void show(){
+void show(Card *deck){
     Card *temp = deck;
     printf("\n\tC1\tC2\tC3\tC4\tC5\tC6\tC7\n");
     int i = 0;
@@ -643,13 +650,6 @@ void print_gamestate(){
     }
 }
 
-const char* get_input() {
-    char input[127];
-    printf("Enter command: ");
-    scanf("%s", &input);
-    return input;
-}
-
 //Distributes the cards on to the starting piles.
 void distribute_cards(Card* play_deck){
     bool distributed = false;
@@ -698,56 +698,125 @@ void setup_columns_foundations(){
     }
 }
 
+void startup_phase() {
+    char input[10];
+    char *lastcommand = input;
+    char filename[155];
+    Card *initial_deck = NULL;
+    Card *shuffled_deck = NULL;
+    while (!play) {
+        printf("\n");
+        printf("\nLast command: %s\nMessage: %s\n", lastcommand,command_approver);
+        command_approver = "OK";
+        printf("Enter command: ");
+        scanf("%s", &input);
+
+//"C:\\Users\\emil1\\OneDrive\\Documents\\GitHub\\Yukon-G50\\Test_input.txt"
+        if(strcmp(input, "ld") == 0){
+            printf("Enter filename of file to be loaded,\n"
+                   " or enter 'default' to use default deck of cards: ");
+            scanf("%s", &filename);
+
+            if (strcmp(filename,"default") == 0) {
+                char *strarr = "C:\\Users\\emil1\\OneDrive\\Documents\\GitHub\\Yukon-G50\\Test_input.txt";
+                initial_deck = load_deck(strarr);
+            }else {
+                initial_deck = load_deck(filename);
+            }
+        }else if(strcmp(input, "sw") == 0){
+            if (initial_deck == NULL){
+                error_message();
+            }
+            else{
+                show(initial_deck);
+            }
+
+        }else if(strcmp(input, "sl") == 0){
+            int amount = NULL;
+            printf("Enter amount of cards to split, if no amount is entered it is chosen at random: ");
+            scanf("%d", &amount);
+
+            if (amount == '\n') {
+                amount = rand() % 52;
+                shuffled_deck = interleave_shuffle(initial_deck, amount);
+            }else{
+                shuffled_deck = interleave_shuffle(initial_deck, amount);
+            }
+
+        }else if(strcmp(input, "sr") == 0){
+            shuffled_deck = random_shuffle(initial_deck);
+
+        }else if(strcmp(input, "sd") == 0){
+            char *save_filename;
+            printf("Enter filename of file to be saved,\n"
+                   " or enter 'default' to use default filename cards.txt: ");
+            scanf("%s", &save_filename);
+
+            if (strcmp(save_filename,"default") == 0) {
+                char *savefiletemp = "C:\\Users\\emil1\\OneDrive\\Documents\\GitHub\\Yukon-G50\\cards.txt";
+                save_cards(shuffled_deck, savefiletemp);
+            }else{
+                save_cards(shuffled_deck, save_filename);
+            }
+
+        }else if(strcmp(input, "qq") == 0){
+            exit(0);
+
+        }else if(input[0] == 'p'){
+            setup_columns_foundations();
+            distribute_cards(shuffled_deck);
+            play = true;
+
+        }else
+            error_message();
+
+        lastcommand = input;
+    }
+}
+
+bool game_won(){
+    bool gamewon = true;
+
+    for (int i = 0; i < sizeof(foundations) / sizeof(foundations[0]); ++i) {
+        if(foundations[i]->prev->rank != ranks[12])
+            gamewon = false;
+    }
+    return gamewon;
+}
+
+void play_phase(){
+    char input[10];
+    char *lastcommand = input;
+    initialize_undo();
+    while(play){
+        printf("\n");
+        print_gamestate();
+        printf("\nLast command: %s\nMessage: %s\n", lastcommand,command_approver);
+        command_approver = "OK";
+        printf("Enter command: ");
+        scanf("%s", &input);
+
+        if(input[0] == 'u')
+            undo();
+        else if(input[0] == 'q')
+            play = false;
+        else{
+            move(input);
+        }
+
+        lastcommand = input;
+    }
+}
+
 int main() {
-
-//   system("cls"); Clears console
-    //Test for show method
-//    head = load_deck("C:\\DTU\\2-semester\\MaskinarProgrammering\\Yukon\\Yukon-G50\\Test_input.txt");
-//    show();
-
-    latest = initialize_undo();
-
-    Moves *mower = new_move("UNDO");
-
-    // Test to print all cards, if no input file is provided
-    deck = default_deck();
-    show();
-
-    Card *play_deck = interleave_shuffle(deck, 25);
-    Card *prev = play_deck->prev;
-    setup_columns_foundations();
-    distribute_cards(play_deck);
-    print_gamestate();
-
-    move("C1->F1");
-    print_gamestate();
-    undo();
-    print_gamestate();
-    move("F1->C2");
-    print_gamestate();
-    move("C7->C1");
-    move("C3:8C->C4");
-    print_gamestate();
-    move("C7:QD->C1");
-    print_gamestate();
-
-    do {
-        play_deck = play_deck->next;
-        printf("%c%c\n",play_deck->rank, play_deck->suit);
-    }  while (play_deck->next != NULL && play_deck->next->rank != *"B");
-    printf("\nLast card is: %c%c\n First card is: %c%c", prev->rank, prev->suit, prev->next->rank, prev->next->suit);
-
-
-//    do {
-//        printf("%c%c\n",first_card->rank, first_card->suit);
-//        first_card = first_card->next;
-//        printf("%c%c\n",first_card->rank, first_card->suit);
-//    }  while (first_card->next != NULL);
-
-    //clear screen
-    //system("cls");
-
-    //save_cards(deck, "C:\\DTU\\2-semester\\MaskinarProgrammering\\Yukon\\YukonS-G50\\Test1_input.txt");
-
+    bool won = false;
+    while(!won) {
+        startup_phase();
+        play_phase();
+        if(game_won()){
+            won = true;
+            printf("Congrats, you've won the game!");
+        }
+    }
     return 0;
 }
