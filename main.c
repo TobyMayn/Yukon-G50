@@ -141,7 +141,7 @@ Card *load_deck(char* filename){
 void *save_cards(Card *deck, char* filename){
     FILE* ptr;
 
-    ptr = fopen(filename, "w");
+    ptr = fopen(filename, "w+");
     do {
         deck = deck->next;
         fprintf(ptr,"%c%c\n", deck->rank, deck->suit);
