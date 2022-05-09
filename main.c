@@ -341,6 +341,15 @@ bool valid_move(Card *cardToMove, Card *topilepos, Card *topile){
     }
     return valid;
 }
+void move_card(Card *from,Card *to){
+    Card *temp = from;
+    temp->prev->next = temp->next;
+    temp->next->prev = temp->prev;
+
+    temp->next = to->next;
+    to->next = temp;
+    temp->prev = to;
+}
 
 void move_specific(const char *command,Card *pointer) {
     //checks if card exists in pile / list
@@ -391,11 +400,7 @@ void pile_to_pile(const char *command,Card *pointer) {
 
     Card *temp;
     if(valid_move(from,to,pile)){
-        temp = pointer->prev;
-        temp->next = NULL; //Dereferencing card from old list.
-
-        pointer->prev =  to;
-        to->next = pointer;//Referencing card in new list.
+        move_card(from,to);
     }
 
 }
@@ -417,7 +422,6 @@ void move(const char *command) {
         return;
     }
     int strlen = find_string_length(command);
-    printf("%d",strlen);
 
     switch (strlen) {
         case 6 :
@@ -530,7 +534,7 @@ void print_gamestate(){
             while (foundation_temp->next != foundations[(f / 2) - 1]) {
                 foundation_temp = foundation_temp->next;
             }
-            if(foundation_temp->prev == foundations[(f / 2) - 1]){
+            if(foundations[(f / 2) - 1]->next == foundations[(f / 2) - 1]){
                 printf("[]\tF%c",(f / 2) + '0');
             }else{
                 printf("%c%c\t%c%c",foundation_temp->rank,foundation_temp->suit,foundations[(f / 2) - 1]->rank,foundations[(f / 2) - 1]->suit);
@@ -610,6 +614,7 @@ int main() {
     setup_columns_foundations();
     distribute_cards(play_deck);
     print_gamestate();
+    printf("%c",columns[0]->rank);
     move("C1->F1");
     print_gamestate();
 
