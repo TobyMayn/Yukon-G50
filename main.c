@@ -60,6 +60,9 @@ Card *default_deck(){
 Card *load_deck(char* filename){
     FILE* ptr;
     char ch;
+    char check_card[2];
+    char check_cards[52][2];
+    int n = 0;
 
     ptr = fopen(filename, "r");
 
@@ -75,6 +78,7 @@ Card *load_deck(char* filename){
 
     // Do-while that reads an entire line, creates a new card and adds it to the deck
     do {
+
         for (int i = 0; i < 3; ++i) {
             ch = fgetc(ptr);
             input[i] = ch;
@@ -85,6 +89,15 @@ Card *load_deck(char* filename){
         newCard->prev = current;
         newCard->next = head;
         current = newCard;
+        snprintf(check_cards[n],4,"%c%c",newCard->rank, newCard->suit);
+        for (int i = 0; i < n; ++i) {
+            if(check_cards[i][0] == newCard->rank && check_cards[i][1] == newCard->suit){
+                printf("Card: %c%c is a dublicate card\nLine: %i of %s", check_cards[i][0], check_cards[i][1], n+1, filename);
+                free(newCard);
+                return 0;
+            }
+        }
+        n++;
 
         // Checking if character is not EOF.
         // If it is EOF stop reading.
@@ -438,13 +451,13 @@ void show(){
     int j = 1;
     int f;
     char s[2];
-    while(temp->next != NULL){
+    while(temp->next != NULL && temp->next->rank != 'B'){
         if(i % 7 == 0) {
             if(j % 2 == 0 && j != 1) {
                 f = j / 2;
                 s[0] = 'F';
                 s[1] = f + '0';
-                printf("\t[]\t%s",s);
+                printf("\t[]\t%c%c",s[0],s[1]);
             }
             printf("\n\t");
             j++;
@@ -601,18 +614,18 @@ int main() {
 
 //   system("cls"); Clears console
     //Test for show method
-//    head = load_deck("C:\\DTU\\2-semester\\MaskinarProgrammering\\Yukon\\Yukon-G50\\Test_input.txt");
-//    show();
+    head = load_deck("C:\\DTU\\2-semester\\MaskinarProgrammering\\Yukon\\Yukon-G50\\Test_input.txt");
+    show();
 
     // Test to print all cards, if no input file is provided
-    Card *deck = default_deck();
-    Card *play_deck = interleave_shuffle(deck, 52);
-    Card *prev = play_deck->prev;
-    do {
-        play_deck = play_deck->next;
-        printf("%c%c\n",play_deck->rank, play_deck->suit);
-    }  while (play_deck->next != NULL && play_deck->next->rank != *"B");
-    printf("\nLast card is: %c%c\n First card is: %c%c", prev->rank, prev->suit, prev->next->rank, prev->next->suit);
+//    Card *deck = default_deck();
+//    Card *play_deck = interleave_shuffle(deck, 52);
+//    Card *prev = play_deck->prev;
+//    do {
+//        play_deck = play_deck->next;
+//        printf("%c%c\n",play_deck->rank, play_deck->suit);
+//    }  while (play_deck->next != NULL && play_deck->next->rank != *"B");
+//    printf("\nLast card is: %c%c\n First card is: %c%c", prev->rank, prev->suit, prev->next->rank, prev->next->suit);
 //    do {
 //        printf("%c%c\n",first_card->rank, first_card->suit);
 //        first_card = first_card->next;
