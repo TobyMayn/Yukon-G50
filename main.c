@@ -286,8 +286,10 @@ Card *get_pile(char rank,char suit){
 
 Card *find_card(char rank,char suit,Card *ptr){
     Card *pile = ptr;
-    while(ptr->next != pile && (ptr->rank != rank && ptr->suit != suit)){
+    while(ptr->next != pile || (ptr->rank != rank && ptr->suit != suit)){
         ptr = ptr->next;
+        if(ptr->rank == rank && ptr->suit == suit)
+            return ptr;
     }
     if(ptr->rank != rank && ptr->suit != suit || (ptr->prev == pile && ptr->next == pile)){ //Checks if the specified card, is the dummy card + checking if the card exists
         error_message();
@@ -341,6 +343,23 @@ bool valid_move(Card *cardToMove, Card *topilepos, Card *topile){
     }
     return valid;
 }
+
+void move_bunch(Card *from, Card *frompile, Card *to, Card *topile){
+    Card *temp = from;
+
+    while(temp->next != frompile){
+        temp = temp->next;
+    }
+
+    from->prev->next = frompile;
+    frompile->prev = from->prev;
+
+    topile->prev = temp;
+    temp->next = topile;
+    from->prev = to;
+    to->next = from;
+}
+
 void move_card(Card *from,Card *to){
     Card *temp = from;
     temp->prev->next = temp->next;
@@ -351,10 +370,11 @@ void move_card(Card *from,Card *to){
     temp->prev = to;
 }
 
-void move_specific(const char *command,Card *pointer) {
+void move_specific(const char *command,Card *cardtomove) {
+    Card *frompile = cardtomove;
     //checks if card exists in pile / list
-    pointer = find_card(command[3],command[4],pointer);
-    if(pointer == NULL){
+    cardtomove = find_card(command[3], command[4], cardtomove);
+    if(cardtomove == NULL){
         error_message();
         return;
     }
@@ -366,19 +386,17 @@ void move_specific(const char *command,Card *pointer) {
         return;
     }
 
-    while(to->next != NULL){
-        to = to->next;
+    Card *tonode = to;
+    while(tonode->next != to){
+        tonode = tonode->next;
     }
-    //from this point we have found the card from a pile, and the pile it's supposed to go to.
+    //cardtomove this point we have found the card cardtomove a pile, and the pile it's supposed to go to.
     //now we check if the move is valid.
-    if(valid_move(pointer,to,to)){
-        //moves card from a stack
-        Card *temp = pointer->prev;
-        temp->next = NULL;
-
-        pointer->prev = to;
-        to->next = pointer;
+    if(valid_move(cardtomove, tonode, to)){
+        move_bunch(cardtomove,frompile,tonode,to);
     }
+    else
+        error_message();
 }
 
 
@@ -416,8 +434,8 @@ int find_string_length(const char *string){
 }
 
 void move(const char *command) {
-    Card *temp = get_pile(command[0], command[1]);//gets pointer of list to move from
-    if (temp == NULL) {
+    Card *pile = get_pile(command[0], command[1]);//gets pointer of list to move from
+    if (pile == NULL) {
         error_message();//if the get_pile method returns a null pointer we return to caller with error message
         return;
     }
@@ -425,10 +443,10 @@ void move(const char *command) {
 
     switch (strlen) {
         case 6 :
-            pile_to_pile(command, temp);
+            pile_to_pile(command, pile);
             break;
         case 9:
-            move_specific(command, temp);
+            move_specific(command, pile);
             break;
         default:
             error_message();
@@ -616,6 +634,13 @@ int main() {
     print_gamestate();
     printf("%c",columns[0]->rank);
     move("C1->F1");
+    print_gamestate();
+    move("F1->C2");
+    print_gamestate();
+    move("C7->C1");
+    move("C3:8C->C4");
+    print_gamestate();
+    move("C7:QD->C1");
     print_gamestate();
 
     do {
