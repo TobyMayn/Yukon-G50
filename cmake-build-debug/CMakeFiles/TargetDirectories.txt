@@ -1,3 +1,3 @@
-C:/Users/emil1/OneDrive/Documents/GitHub/Yukon-G50/cmake-build-debug/CMakeFiles/Yukon_G50.dir
-C:/Users/emil1/OneDrive/Documents/GitHub/Yukon-G50/cmake-build-debug/CMakeFiles/edit_cache.dir
-C:/Users/emil1/OneDrive/Documents/GitHub/Yukon-G50/cmake-build-debug/CMakeFiles/rebuild_cache.dir
+C:/Users/mads2/OneDrive/Dokumenter/GitHub/Yukon-G50/cmake-build-debug/CMakeFiles/Yukon_G50.dir
+C:/Users/mads2/OneDrive/Dokumenter/GitHub/Yukon-G50/cmake-build-debug/CMakeFiles/edit_cache.dir
+C:/Users/mads2/OneDrive/Dokumenter/GitHub/Yukon-G50/cmake-build-debug/CMakeFiles/rebuild_cache.dir

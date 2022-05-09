@@ -751,56 +751,58 @@ int main() {
 
     return 0;
 }
-typedef enum commands {
-    ld,
-    sw,
-    sl,
-    sr,
-    sd,
-    qq,
-    p,
-    q,
-    m,
-};
-int main{
+int main1()
+{
+
+    typedef enum commands {
+        ld,
+        sw,
+        sl,
+        sr,
+        sd,
+        qq,
+        p,
+        q,
+        m,
+    };
         printf("Enter a command. for help, enter 'help'");
-        scanf("%c", &move)
+        scanf("%c", &move);
         switch(commands)
         {
 //load file. Needs file name
-            case 'ld':
+            case ld:
 
                 break;
 //Show all the cards
-            case 'sw':
+            case sw:
 
                 break;
 //Split the deck and shuffle in an interleved manner
-            case 'sl':
+            case sl:
 
                 break;
 // Shuffle the deck in a random manner
-            case 'sr':
+            case sr:
 
                 break;
 //Saves the card game.
-            case 'sd':
+            case sd:
 
                 break;
 //Force quit the game.
-            case 'qq':
+            case qq:
 
                 break;
 //Starts the game using the current deck
-            case 'p':
+            case p:
 
                 break;
 //Quit current game, and return to the setup phase
-            case 'q':
+            case q:
 
                 break;
 //Placeholder for move commands.
-            case 'm':
+            case m:
 
                 break;
 // In case of unexpected inputs
