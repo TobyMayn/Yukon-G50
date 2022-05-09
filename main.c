@@ -550,7 +550,7 @@ void show(){
                 f = j / 2;
                 s[0] = 'F';
                 s[1] = f + '0';
-                printf("\t[]\t%s",s);
+                printf("\t[]\t%c%c",s[0],s[1]);
             }
             printf("\n\t");
             j++;
