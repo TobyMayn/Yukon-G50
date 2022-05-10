@@ -1,0 +1,338 @@
+Index: main.c
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>//#include <iostream>\r\n#include <string.h>\r\n//#include <cstring>\r\n#include <stdio.h>\r\n#include <malloc.h>\r\n#include <stdbool.h>\r\n#include <time.h>\r\n\r\ntypedef struct card Card;\r\n\r\n// Array of the different suits, Clubs, Diamonds, Hearts and Spades\r\nconst char suits[] = {'C', 'D', 'H', 'S'};\r\nchar ranks[] = {'A', '2', '3', '4', '5', '6', '7', '8', '9', 'T', 'J', 'Q', 'K'};\r\n\r\n//Array consisting of the initial number of cards turned face down;\r\nint facedown[7];\r\n\r\nCard *head = NULL;\r\n// Foundations\r\nCard *foundations[4];\r\n\r\n//Columns\r\nCard *columns[7];\r\n\r\n\r\nstruct card {\r\n    Card *prev;\r\n    Card *next;\r\n    char rank;\r\n    char suit;\r\n};\r\n\r\n\r\nCard *new_card(char rank, char suit){\r\n    Card *card = (Card *)malloc(sizeof(Card));\r\n    card->prev = NULL;\r\n    card->next = NULL;\r\n    card->rank = rank;\r\n    card->suit = suit;\r\n    return card;\r\n}\r\nCard *default_deck(){\r\n    //Initialize deck, with a dummy bottom card\r\n    Card *head = new_card('B', 'B');\r\n    Card *current = head;\r\n    for (int suit = 0; suit < 4; suit++) {\r\n        for (int rank = 0; rank < 13; rank++) {\r\n            Card *newCard = new_card(ranks[rank], suits[suit]);\r\n            current->next = newCard;\r\n            head->prev = newCard;\r\n            newCard->prev = current;\r\n            newCard->next = head;\r\n            current = newCard;\r\n        }\r\n    }\r\n    return head;\r\n}\r\n\r\n//Still needs work - currently only takes input file and prints content to terminal\r\nCard *load_deck(char* filename){\r\n    FILE* ptr;\r\n    char ch;\r\n\r\n    ptr = fopen(filename, \"r\");\r\n\r\n    if (NULL == ptr) {\r\n        printf(\"File doesn't exist\");\r\n    }\r\n\r\n    // Add dummy card to bottom\r\n    Card *head = new_card('B', 'B');\r\n    Card *current = head;\r\n\r\n    char input[3]; // char array to hold line characters for input\r\n\r\n    // Do-while that reads an entire line, creates a new card and adds it to the deck\r\n    do {\r\n        for (int i = 0; i < 3; ++i) {\r\n            ch = fgetc(ptr);\r\n            input[i] = ch;\r\n        }\r\n        Card *newCard = new_card(input[0], input[1]);\r\n        current->next = newCard;\r\n        head->prev = newCard;\r\n        newCard->prev = current;\r\n        newCard->next = head;\r\n        current = newCard;\r\n\r\n        // Checking if character is not EOF.\r\n        // If it is EOF stop reading.\r\n    } while (ch != EOF);\r\n\r\n    // Closing the file\r\n    fclose(ptr);\r\n    return head;\r\n}\r\nvoid *save_cards(Card *deck, char* filename){\r\n    FILE* ptr;\r\n\r\n    ptr = fopen(filename, \"w\");\r\n    do {\r\n        deck = deck->next;\r\n        fprintf(ptr,\"%c%c\\n\", deck->rank, deck->suit);\r\n    }while(deck->next != NULL);\r\n\r\n\r\n    // Closing the file\r\n    fclose(ptr);\r\n}\r\n\r\nvoid update_facedown(int index){\r\n    if(facedown[index] != 0)\r\n        facedown[index]--;\r\n}\r\n\r\nvoid error_message(){\r\n    printf(\"\\nInvalid move..!\\n\");\r\n}\r\n\r\n\r\n// Helper method for interleave_shuffle\r\nCard *split_deck(Card *deck, int amount){\r\n    Card *temp_deck = deck;\r\n\r\n    //First actual card in deck\r\n    temp_deck = temp_deck->next;\r\n    // Loop to find spot to split\r\n    for (int i = 0; i < amount; ++i) {\r\n        temp_deck = temp_deck->next;\r\n    }\r\n\r\n    temp_deck->prev->next = NULL;\r\n    temp_deck->prev = NULL;\r\n\r\n    Card *part = temp_deck; // Variable for holding split part of deck\r\n    return part;\r\n}\r\n\r\n\r\nCard *interleave_shuffle(Card *head, int amount){\r\n    Card *new_deck_head = new_card('B', 'B'); // Variable for holding interleaved deck\r\n    Card *new_deck = new_deck_head;\r\n    Card *part;\r\n    //If amount == 0, just return original deck\r\n    if (amount > 52) {\r\n        printf(\"Amount too large, pick lower amount!!\");\r\n        return new_deck;\r\n    }\r\n    if (amount == 0 || amount == 52){\r\n        new_deck->next = head->next;\r\n        return new_deck;\r\n    }\r\n    else {\r\n        part = split_deck(head, amount);\r\n        }\r\n\r\n    Card *deck_next = head->next;\r\n    deck_next->prev = NULL;\r\n    // Deck now has first actual card\r\n    //deck->prev = NULL;\r\n\r\n    while(deck_next != NULL && deck_next->rank != 'B'){\r\n        // Add card from first pile to new_deck\r\n        new_deck->next = new_card(deck_next->rank, deck_next->suit);\r\n        new_deck->next->prev = new_deck;\r\n        new_deck = new_deck->next;\r\n\r\n        // Update first pile pointer\r\n        deck_next = deck_next->next;\r\n\r\n        //Check if card it is the last card in second pile\r\n        if(part->next == NULL || part->next->rank == 'B'){\r\n            //Add last card in part\r\n            new_deck->next = new_card(part->rank, part->suit);\r\n            new_deck->next->prev = new_deck;\r\n            new_deck = new_deck->next;\r\n\r\n            //Add the rest of the other cards in the first pile\r\n            new_deck->next = deck_next;\r\n            new_deck->next->prev = new_deck;\r\n            return new_deck_head;\r\n        }\r\n\r\n\r\n        if(part->next != NULL && part->next->rank != 'B' ){\r\n            //Add card from second pile to new_deck\r\n            new_deck->next = new_card(part->rank, part->suit);\r\n            new_deck->next->prev = new_deck;\r\n            new_deck = new_deck->next;\r\n\r\n            // update second pile pointer\r\n            part = part->next;\r\n        }\r\n    }\r\n    new_deck->next = part;\r\n    new_deck->next->prev = new_deck;\r\n\r\n    return new_deck_head;\r\n}\r\n\r\nCard *random_shuffle(Card *deck){\r\n    int n = 2;\r\n    if(!deck->next){\r\n        return deck;\r\n    }\r\n    srand(time(NULL)); // Seeds rand() once, generating better random numbers.\r\n\r\n    Card *shuffled_deck = deck->next; // Add first card from deck to shuffled_deck\r\n    Card *current_card = deck->next->next; // Add second card from deck to current card\r\n    Card *next_card = deck->next->next->next; // Add third card from deck to next_card\r\n    shuffled_deck->next = NULL;\r\n    shuffled_deck->prev = NULL;\r\n\r\n    while (current_card->rank != 'B'){\r\n        Card *next_next_card = next_card->next;\r\n        int random = rand() % n;\r\n        if (random == 0){\r\n            shuffled_deck->prev = current_card;\r\n            current_card->next = shuffled_deck;\r\n            current_card->prev = NULL;\r\n            shuffled_deck = current_card;\r\n        }\r\n        else {\r\n            Card *placeholder = shuffled_deck;\r\n            for (int i = 1; i < random; ++i) {\r\n                placeholder = placeholder->next;\r\n            }\r\n            if (placeholder->next != NULL) {\r\n                placeholder->next->prev = current_card;\r\n            }\r\n            current_card->next = placeholder->next;\r\n            placeholder->next = current_card;\r\n            current_card->prev = placeholder;\r\n\r\n        }\r\n        current_card = next_card;\r\n        next_card = next_next_card; // Update next_card\r\n        n++;\r\n    }\r\n    //Add dummy card in start of shuffled deck\r\n    shuffled_deck->prev = deck;\r\n    deck->next = shuffled_deck;\r\n    deck->prev = NULL;\r\n    shuffled_deck = deck;\r\n\r\n    return shuffled_deck;\r\n}\r\n\r\n//method to find pile ie foundation or column, to start searching for a card.\r\n//If the given pile doesn't exist the method will return a null pointer.\r\nCard *get_pile(char rank,char suit){\r\n    Card *temp = NULL;\r\n    for (int i = 0; i < ((sizeof(columns) / sizeof(columns[0])) + sizeof(foundations) / sizeof(foundations[0])) ; ++i) {\r\n        if (i >= 7){\r\n            if(foundations[i % 7]->rank == rank && foundations[i % 7]->suit == suit)\r\n                temp = foundations[i % 7];\r\n        }\r\n        else if(columns[i % 7]->rank == rank && columns[i % 7]->suit == suit){\r\n            temp = columns[i];\r\n            break;\r\n        }\r\n    }\r\n    return temp;\r\n}\r\n\r\nCard *find_card(char rank,char suit,Card *ptr){\r\n    while(ptr->next != NULL && (ptr->rank != rank && ptr->suit != suit)){\r\n        ptr = ptr->next;\r\n    }\r\n    if(ptr->rank != rank && ptr->suit != suit || ptr->prev == NULL){ //Checks if the specified card, is the dummy card + checking if the card exists\r\n        error_message();\r\n        return NULL;\r\n    }\r\n    return ptr;\r\n}\r\n\r\n//the foundations will not have a predefined suit. The suit of the foundation will be defined by the first card moved to it.\r\nbool move_to_foundation(Card *card, Card *toPile) {\r\n    bool possMove = false;\r\n    if(card->next != NULL)//checks if we're trying to move more than one card.\r\n        return possMove;\r\n\r\n    if (toPile->prev == NULL){//Checks if the foundation is empty.\r\n        if(card->rank == ranks[0])//if the foundation is empty check if the card is an Ace.\r\n            possMove = true;\r\n    }else{\r\n        //find topcard in foundation\r\n        while(toPile->next != NULL){\r\n            toPile = toPile->next;\r\n        }\r\n        int i = 0;\r\n        while(ranks[i] != card->rank){ //Find the index for the cards rank.\r\n            i++;\r\n        }\r\n\r\n        if(ranks[i-1] == toPile->rank){//checks if the topcard is one rank less, than the card we with to move.\r\n            if(card->suit == toPile->suit)//checks for same suit.\r\n                possMove = true;\r\n        }\r\n    }\r\n    return possMove;\r\n}\r\n\r\nbool valid_move(Card *card,Card *topile){\r\n    bool valid = false;\r\n    int i = 0;\r\n\r\n    if(topile->rank == foundations[0]->rank){\r\n        return move_to_foundation(card,topile);\r\n    }\r\n\r\n    while(topile->next != NULL){\r\n        topile = topile->next;\r\n    }\r\n    while(ranks[i] != card->rank){\r\n        i++;\r\n    }\r\n    if(i < 12 && ranks[i+1] == topile->rank){\r\n        if(card->suit != topile->suit)\r\n            valid = true;\r\n    }\r\n    if(i == 12){\r\n        //checks if pile is empty for king move\r\n        if(topile->prev == NULL)\r\n            valid = true;\r\n    }\r\n    return valid;\r\n}\r\n\r\nvoid move_specific(const char *command,Card *pointer) {\r\n    //checks if card exists in pile / list\r\n    pointer = find_card(command[3],command[4],pointer);\r\n    if(pointer == NULL){\r\n        error_message();\r\n        return;\r\n    }\r\n\r\n    //finds the column or foundation specified in the command.\r\n    Card *to = get_pile(command[7],command[8]);\r\n    if(to == NULL){\r\n        error_message();\r\n        return;\r\n    }\r\n\r\n    while(to->next != NULL){\r\n        to = to->next;\r\n    }\r\n    //from this point we have found the card from a pile, and the pile it's supposed to go to.\r\n    //now we check if the move is valid.\r\n    if(valid_move(pointer,to)){\r\n        //moves card from a stack\r\n        Card *temp = pointer->prev;\r\n        temp->next = NULL;\r\n\r\n        pointer->prev = to;\r\n        to->next = pointer;\r\n    }\r\n}\r\n\r\n\r\nvoid pile_to_pile(const char *command,Card *pointer) {\r\n    Card *to = get_pile(command[4],command[5]);\r\n    if (to == NULL){\r\n        error_message();\r\n        return;\r\n    }\r\n\r\n    while(pointer->next != NULL){\r\n        pointer = pointer->next;\r\n    }\r\n    while(to->next != NULL){\r\n        to = to->next;\r\n    }\r\n\r\n    Card *temp;\r\n    if(valid_move(pointer,to)){\r\n        temp = pointer->prev;\r\n        temp->next = NULL; //Dereferencing card from old list.\r\n\r\n        pointer->prev =  to;\r\n        to->next = pointer;//Referencing card in new list.\r\n    }\r\n\r\n}\r\n\r\nvoid move(const char *command, int strlen) {\r\n    Card *temp = get_pile(command[0], command[1]);//gets pointer of list to move from\r\n    if (temp == NULL) {\r\n        error_message();//if the get_pile method returns a null pointer we return to caller with error message\r\n        return;\r\n    }\r\n\r\n    int type = 2;\r\n    if (strlen == 6)\r\n        type = 0;\r\n    else if (strlen == 9)\r\n        type = 1;\r\n\r\n\r\n    switch (type) {\r\n        case 0 :\r\n            pile_to_pile(command, temp);\r\n            break;\r\n        case 1:\r\n            move_specific(command, temp);\r\n            break;\r\n        case 2:\r\n            error_message();\r\n            return;\r\n    }\r\n}\r\n\r\nvoid show(){\r\n    Card *temp = head;\r\n    printf(\"\\n\\tC1\\tC2\\tC3\\tC4\\tC5\\tC6\\tC7\\n\");\r\n    int i = 0;\r\n    int j = 1;\r\n    int f;\r\n    char s[2];\r\n    while(temp->next != NULL){\r\n        if(i % 7 == 0) {\r\n            if(j % 2 == 0 && j != 1) {\r\n                f = j / 2;\r\n                s[0] = 'F';\r\n                s[1] = f + '0';\r\n                printf(\"\\t[]\\t%s\",s);\r\n            }\r\n            printf(\"\\n\\t\");\r\n            j++;\r\n        }\r\n        temp = temp->next;\r\n        printf(\"%c%c\\t\",temp->rank, temp->suit);\r\n\r\n        i++;\r\n    }\r\n    printf(\"\\n\\n\");\r\n}\r\n\r\nint find_longest_list(){\r\n    int max_length = 0;\r\n    //temp pointer to iterate through lists\r\n    Card *temp;\r\n    //finding the longest linked list.\r\n    for (int i = 0; i < sizeof(columns) / sizeof(columns[0]); ++i) {\r\n        int j = 0;\r\n        temp = columns[i];\r\n        while(temp->next != NULL){\r\n            temp = temp->next;\r\n            j++;\r\n        }\r\n        if(j > max_length)\r\n            max_length = j;\r\n    }\r\n    return max_length;\r\n}\r\n\r\n//method for printing the contents of each list\r\nvoid print_gamestate(){\r\n    Card *placeholder[7];\r\n\r\n    //copying head pointers to foundations linked lists over to another array.\r\n    for (int i = 0; i < sizeof(placeholder) / sizeof(placeholder[0]); ++i) {\r\n        placeholder[i] = columns[i];\r\n    }\r\n\r\n    int max_length = find_longest_list();\r\n    if(max_length < 8)\r\n        max_length = 8;\r\n\r\n    printf(\"\\n\");\r\n    for (int i = 0; i < sizeof(placeholder) / sizeof(placeholder[0]); ++i) {//Prints the dummy cards for all columns\r\n        printf(\"\\t%c%c\",placeholder[i]->rank,placeholder[i]->suit);\r\n    }\r\n    printf(\"\\n\");\r\n    int f = 1;\r\n    Card* foundation_temp;\r\n    //printing all cards in the column or and empty space if there is no card.\r\n    for (int i = 0; i < max_length; ++i) {\r\n        printf(\"\\n\\t\");\r\n        for (int j = 0; j < sizeof(placeholder) / sizeof(placeholder[0]); ++j) {\r\n            //Checks that next card is not the last card\r\n            if (placeholder[j]->next != columns[j]) {\r\n                placeholder[j] = placeholder[j]->next;\r\n                //checks that the facedown cards has been turned or not\r\n                if(facedown[j] >= i + 1){\r\n                    //checks whether a card is supposed to be turned\r\n                    if(facedown[j] == i + 1 && placeholder[j]->next == columns[j]) {\r\n                        //Decrements the amount of facedown cards for the given column.\r\n                        update_facedown(j);\r\n                        printf(\"%c%c\\t\", placeholder[j]->rank, placeholder[j]->suit);\r\n                    }\r\n                    else\r\n                        //prints facedown card\r\n                        printf(\"[]\\t\");\r\n                }\r\n                else\r\n                    //if we are past the facedown cards just print the card if there is a nextcard\r\n                    printf(\"%c%c\\t\", placeholder[j]->rank, placeholder[j]->suit);\r\n            }\r\n            else\r\n                printf(\"  \\t\");\r\n        }\r\n        //printing foundation cards for evert second row.\r\n        f++;\r\n        if (f % 2 == 0 && ((f/2) - 1) < (sizeof(foundations) / sizeof(foundations[0]))){\r\n            foundation_temp = foundations[(f / 2) - 1];\r\n            while (foundation_temp->next != NULL) {\r\n                foundation_temp = foundation_temp->next;\r\n            }\r\n            if(foundation_temp->prev == NULL){\r\n                printf(\"[]\\tF%c\",(f / 2) + '0');\r\n            }else{\r\n                printf(\"%c%c\\t%c%c\",foundation_temp->rank,foundation_temp->suit,foundations[(f / 2) - 1]->rank,foundations[(f / 2) - 1]->suit);\r\n            }\r\n        }\r\n    }\r\n\r\n\r\n}\r\n\r\nconst char* get_input() {\r\n    char input[127];\r\n    printf(\"Enter command: \");\r\n    scanf(\"%s\", &input);\r\n    return input;\r\n}\r\n\r\nvoid setup_columns_foundations(){\r\n    for (int i = 0; i < 4; ++i) {\r\n        foundations[i] = new_card('F', i + 1 +'0'); //dummy card\r\n    }\r\n    for (int i = 0; i < 7; ++i) {\r\n        columns[i] = new_card('C', i + 1 + '0'); //dummy card\r\n        facedown[i] = i;\r\n    }\r\n}\r\n\r\nint find_string_length(const char *string){\r\n    int size = 0;\r\n    for (int i = 0; i < strlen(string); ++i) {\r\n        if(string[i] != ' ') {\r\n            size++;\r\n        }\r\n    }\r\n    return size;\r\n}\r\n\r\nint main() {\r\n\r\n//    setup_columns_foundations();\r\n//    Card *first_card = columns[0];\r\n//    Card *card  = new_card('A', 'C');\r\n//    first_card->next = card;\r\n//    //Test to show how it could be made in conole\r\n//    printf(\"\\tC1\\tC2\\tC3\\tC4\\tC5\\tC6\\tC7\\n\\n\");\r\n//    printf(\"\\t%c%c\\t[]\\t[]\\t[]\\t[]\\t[]\\t[]\\t\\tF1\\n\", first_card->next->rank, first_card->next->suit);\r\n//    printf(\"\\t  \\t7H\\t[]\\t[]\\t[]\\t[]\\t[]\\t\\t\\n\");\r\n//    printf(\"\\t  \\t  \\t5H\\t[]\\t[]\\t[]\\t[]\\t\\tF2\\n\");\r\n//    printf(\"\\t  \\t  \\t  \\t6C\\t[]\\t[]\\t[]\\t\\t\\n\");\r\n//    printf(\"\\t  \\t  \\t  \\t  \\t6S\\t[]\\t[]\\t\\tF3\\n\");\r\n//    printf(\"\\t  \\t  \\t  \\t  \\t  \\tQC\\t[]\\t\\t\\n\");\r\n//    printf(\"\\t  \\t  \\t  \\t  \\t  \\t  \\tKH\\t\\tF4\\n\");\r\n//    printf(\"\\t  \\t  \\t  \\t  \\t  \\t  \\t  \\t\\t\\n\");\r\n\r\n//test for move method\r\n\r\n//setup_columns_foundations();\r\n//   Card *tempCard = new_card('K','H');\r\n//    columns[4]->next = tempCard;\r\n//    tempCard->prev = columns[4];\r\n//    Card *tempcard2 = new_card('A','H');\r\n//    columns[0]->next = tempcard2;\r\n//    tempcard2->prev = columns[0];\r\n//    print_gamestate();\r\n//    char moveF[] = \"C5:KH->C3  \";\r\n//    move(moveF, find_string_length(moveF));\r\n//    char moveE[] = \"C1->F4 \";\r\n//    move(moveE, find_string_length(moveE));\r\n//    print_gamestate();\r\n\r\n//   system(\"cls\"); Clears console\r\n    //Test for show method\r\n//    head = load_deck(\"C:\\\\DTU\\\\2-semester\\\\MaskinarProgrammering\\\\Yukon\\\\Yukon-G50\\\\Test_input.txt\");\r\n//    show();\r\n\r\n    // Test to print all cards, if no input file is provided\r\n    Card *deck = default_deck();\r\n    Card *play_deck = random_shuffle(deck);\r\n    do {\r\n        play_deck = play_deck->next;\r\n        printf(\"%c%c\\n\",play_deck->rank, play_deck->suit);\r\n    }  while (play_deck->next != NULL && play_deck->next->rank != *\"B\");\r\n//    do {\r\n//        printf(\"%c%c\\n\",first_card->rank, first_card->suit);\r\n//        first_card = first_card->next;\r\n//        printf(\"%c%c\\n\",first_card->rank, first_card->suit);\r\n//    }  while (first_card->next != NULL);\r\n\r\n    //clear screen\r\n    //system(\"cls\");\r\n\r\n    //save_cards(deck, \"C:\\\\DTU\\\\2-semester\\\\MaskinarProgrammering\\\\Yukon\\\\YukonS-G50\\\\Test1_input.txt\");\r\n\r\n\r\n\r\n    return 0;\r\n}
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/main.c b/main.c
+--- a/main.c	(revision c3fe4f27e2af9fc3cbda4f5b17fae67d6deeed40)
++++ b/main.c	(date 1651968100000)
+@@ -444,7 +444,7 @@
+     for (int i = 0; i < sizeof(columns) / sizeof(columns[0]); ++i) {
+         int j = 0;
+         temp = columns[i];
+-        while(temp->next != NULL){
++        while(temp->next != columns[i]){
+             temp = temp->next;
+             j++;
+         }
+@@ -504,10 +504,10 @@
+         f++;
+         if (f % 2 == 0 && ((f/2) - 1) < (sizeof(foundations) / sizeof(foundations[0]))){
+             foundation_temp = foundations[(f / 2) - 1];
+-            while (foundation_temp->next != NULL) {
++            while (foundation_temp->next != foundations[(f / 2) - 1]) {
+                 foundation_temp = foundation_temp->next;
+             }
+-            if(foundation_temp->prev == NULL){
++            if(foundation_temp->prev == foundations[(f / 2) - 1]){
+                 printf("[]\tF%c",(f / 2) + '0');
+             }else{
+                 printf("%c%c\t%c%c",foundation_temp->rank,foundation_temp->suit,foundations[(f / 2) - 1]->rank,foundations[(f / 2) - 1]->suit);
+Index: cmake-build-debug/CMakeFiles/clion-log.txt
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>\"C:\\Program Files\\JetBrains\\CLion 2021.3.4\\bin\\cmake\\win\\bin\\cmake.exe\" -DCMAKE_BUILD_TYPE=Debug \"-DCMAKE_MAKE_PROGRAM=C:/Program Files/JetBrains/CLion 2021.3.4/bin/ninja/win/ninja.exe\" -G Ninja C:\\DTU\\2-semester\\MaskinarProgrammering\\Yukon\\Yukon-G50\r\n-- The C compiler identification is GNU 11.2.0\r\n-- Detecting C compiler ABI info\r\n-- Detecting C compiler ABI info - done\r\n-- Check for working C compiler: C:/Program Files/JetBrains/CLion 2021.3.4/bin/mingw/bin/gcc.exe - skipped\r\n-- Detecting C compile features\r\n-- Detecting C compile features - done\r\n-- Configuring done\r\n-- Generating done\r\n-- Build files have been written to: C:/DTU/2-semester/MaskinarProgrammering/Yukon/Yukon-G50/cmake-build-debug\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/cmake-build-debug/CMakeFiles/clion-log.txt b/cmake-build-debug/CMakeFiles/clion-log.txt
+--- a/cmake-build-debug/CMakeFiles/clion-log.txt	(revision c3fe4f27e2af9fc3cbda4f5b17fae67d6deeed40)
++++ b/cmake-build-debug/CMakeFiles/clion-log.txt	(date 1651831073198)
+@@ -1,10 +1,10 @@
+-"C:\Program Files\JetBrains\CLion 2021.3.4\bin\cmake\win\bin\cmake.exe" -DCMAKE_BUILD_TYPE=Debug "-DCMAKE_MAKE_PROGRAM=C:/Program Files/JetBrains/CLion 2021.3.4/bin/ninja/win/ninja.exe" -G Ninja C:\DTU\2-semester\MaskinarProgrammering\Yukon\Yukon-G50
++"C:\Program Files\JetBrains\CLion 2022.1\bin\cmake\win\bin\cmake.exe" -DCMAKE_BUILD_TYPE=Debug "-DCMAKE_MAKE_PROGRAM=C:/Program Files/JetBrains/CLion 2022.1/bin/ninja/win/ninja.exe" -G Ninja -S C:\Users\emil1\OneDrive\Documents\GitHub\Yukon-G50 -B C:\Users\emil1\OneDrive\Documents\GitHub\Yukon-G50\cmake-build-debug
+ -- The C compiler identification is GNU 11.2.0
+ -- Detecting C compiler ABI info
+ -- Detecting C compiler ABI info - done
+--- Check for working C compiler: C:/Program Files/JetBrains/CLion 2021.3.4/bin/mingw/bin/gcc.exe - skipped
++-- Check for working C compiler: C:/Program Files/JetBrains/CLion 2022.1/bin/mingw/bin/gcc.exe - skipped
+ -- Detecting C compile features
+ -- Detecting C compile features - done
+ -- Configuring done
+ -- Generating done
+--- Build files have been written to: C:/DTU/2-semester/MaskinarProgrammering/Yukon/Yukon-G50/cmake-build-debug
++-- Build files have been written to: C:/Users/emil1/OneDrive/Documents/GitHub/Yukon-G50/cmake-build-debug
+Index: cmake-build-debug/Testing/Temporary/LastTest.log
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>Start testing: May 07 18:28 Rom, sommertid\r\n----------------------------------------------------------\r\nEnd testing: May 07 18:28 Rom, sommertid\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/cmake-build-debug/Testing/Temporary/LastTest.log b/cmake-build-debug/Testing/Temporary/LastTest.log
+--- a/cmake-build-debug/Testing/Temporary/LastTest.log	(revision c3fe4f27e2af9fc3cbda4f5b17fae67d6deeed40)
++++ b/cmake-build-debug/Testing/Temporary/LastTest.log	(date 1651968258000)
+@@ -1,3 +1,3 @@
+-Start testing: May 07 18:28 Rom, sommertid
++Start testing: May 06 16:34 Rom, sommertid
+ ----------------------------------------------------------
+-End testing: May 07 18:28 Rom, sommertid
++End testing: May 06 16:34 Rom, sommertid
+Index: .idea/workspace.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+><?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<project version=\"4\">\r\n  <component name=\"AutoImportSettings\">\r\n    <option name=\"autoReloadType\" value=\"SELECTIVE\" />\r\n  </component>\r\n  <component name=\"CMakeRunConfigurationManager\" shouldGenerate=\"true\" shouldDeleteObsolete=\"true\">\r\n    <generated>\r\n      <config projectName=\"Yukon_G50\" targetName=\"Yukon_G50\" />\r\n    </generated>\r\n  </component>\r\n  <component name=\"CMakeSettings\">\r\n    <configurations>\r\n      <configuration PROFILE_NAME=\"Debug\" ENABLED=\"true\" CONFIG_NAME=\"Debug\" />\r\n    </configurations>\r\n  </component>\r\n  <component name=\"ChangeListManager\">\r\n    <list default=\"true\" id=\"63b0d282-5cb0-4c80-a4ec-0961bdf29197\" name=\"Changes\" comment=\"interleave_shuffle done\">\r\n      <change beforePath=\"$PROJECT_DIR$/.idea/workspace.xml\" beforeDir=\"false\" afterPath=\"$PROJECT_DIR$/.idea/workspace.xml\" afterDir=\"false\" />\r\n      <change beforePath=\"$PROJECT_DIR$/cmake-build-debug/.ninja_deps\" beforeDir=\"false\" afterPath=\"$PROJECT_DIR$/cmake-build-debug/.ninja_deps\" afterDir=\"false\" />\r\n      <change beforePath=\"$PROJECT_DIR$/cmake-build-debug/.ninja_log\" beforeDir=\"false\" afterPath=\"$PROJECT_DIR$/cmake-build-debug/.ninja_log\" afterDir=\"false\" />\r\n      <change beforePath=\"$PROJECT_DIR$/cmake-build-debug/Testing/Temporary/LastTest.log\" beforeDir=\"false\" afterPath=\"$PROJECT_DIR$/cmake-build-debug/Testing/Temporary/LastTest.log\" afterDir=\"false\" />\r\n      <change beforePath=\"$PROJECT_DIR$/main.c\" beforeDir=\"false\" afterPath=\"$PROJECT_DIR$/main.c\" afterDir=\"false\" />\r\n    </list>\r\n    <option name=\"SHOW_DIALOG\" value=\"false\" />\r\n    <option name=\"HIGHLIGHT_CONFLICTS\" value=\"true\" />\r\n    <option name=\"HIGHLIGHT_NON_ACTIVE_CHANGELIST\" value=\"false\" />\r\n    <option name=\"LAST_RESOLUTION\" value=\"IGNORE\" />\r\n  </component>\r\n  <component name=\"ClangdSettings\">\r\n    <option name=\"formatViaClangd\" value=\"false\" />\r\n  </component>\r\n  <component name=\"ExecutionTargetManager\" SELECTED_TARGET=\"CMakeBuildProfile:Debug\" />\r\n  <component name=\"Git.Settings\">\r\n    <option name=\"RECENT_BRANCH_BY_REPOSITORY\">\r\n      <map>\r\n        <entry key=\"$PROJECT_DIR$\" value=\"main\" />\r\n      </map>\r\n    </option>\r\n    <option name=\"RECENT_GIT_ROOT_PATH\" value=\"$PROJECT_DIR$\" />\r\n  </component>\r\n  <component name=\"MarkdownSettingsMigration\">\r\n    <option name=\"stateVersion\" value=\"1\" />\r\n  </component>\r\n  <component name=\"ProjectApplicationVersion\">\r\n    <option name=\"ide\" value=\"CLion\" />\r\n    <option name=\"majorVersion\" value=\"2021\" />\r\n    <option name=\"minorVersion\" value=\"3.4\" />\r\n  </component>\r\n  <component name=\"ProjectId\" id=\"28mLQm1QvPbHb664MwL8dgXKwjh\" />\r\n  <component name=\"ProjectLevelVcsManager\" settingsEditedManually=\"true\" />\r\n  <component name=\"ProjectViewState\">\r\n    <option name=\"hideEmptyMiddlePackages\" value=\"true\" />\r\n    <option name=\"showLibraryContents\" value=\"true\" />\r\n  </component>\r\n  <component name=\"PropertiesComponent\">\r\n    <property name=\"cmake.loaded.for.project\" value=\"true\" />\r\n  </component>\r\n  <component name=\"RunManager\">\r\n    <configuration default=\"true\" type=\"CLionExternalRunConfiguration\" factoryName=\"Application\" REDIRECT_INPUT=\"false\" ELEVATE=\"false\" USE_EXTERNAL_CONSOLE=\"false\" PASS_PARENT_ENVS_2=\"true\">\r\n      <method v=\"2\">\r\n        <option name=\"CLION.EXTERNAL.BUILD\" enabled=\"true\" />\r\n      </method>\r\n    </configuration>\r\n    <configuration name=\"Yukon_G50\" type=\"CMakeRunConfiguration\" factoryName=\"Application\" REDIRECT_INPUT=\"false\" ELEVATE=\"false\" USE_EXTERNAL_CONSOLE=\"false\" PASS_PARENT_ENVS_2=\"true\" PROJECT_NAME=\"Yukon_G50\" TARGET_NAME=\"Yukon_G50\" CONFIG_NAME=\"Debug\" RUN_TARGET_PROJECT_NAME=\"Yukon_G50\" RUN_TARGET_NAME=\"Yukon_G50\">\r\n      <method v=\"2\">\r\n        <option name=\"com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask\" enabled=\"true\" />\r\n      </method>\r\n    </configuration>\r\n  </component>\r\n  <component name=\"SpellCheckerSettings\" RuntimeDictionaries=\"0\" Folders=\"0\" CustomDictionaries=\"0\" DefaultDictionary=\"application-level\" UseSingleDictionary=\"true\" transferred=\"true\" />\r\n  <component name=\"TaskManager\">\r\n    <task active=\"true\" id=\"Default\" summary=\"Default task\">\r\n      <changelist id=\"63b0d282-5cb0-4c80-a4ec-0961bdf29197\" name=\"Changes\" comment=\"\" />\r\n      <created>1651816801136</created>\r\n      <option name=\"number\" value=\"Default\" />\r\n      <option name=\"presentableId\" value=\"Default\" />\r\n      <updated>1651816801136</updated>\r\n      <workItem from=\"1651816802845\" duration=\"4653000\" />\r\n      <workItem from=\"1651824995381\" duration=\"233000\" />\r\n      <workItem from=\"1651825476070\" duration=\"297000\" />\r\n      <workItem from=\"1651825921121\" duration=\"4994000\" />\r\n      <workItem from=\"1651842195150\" duration=\"3959000\" />\r\n    </task>\r\n    <task id=\"LOCAL-00001\" summary=\"Project created\">\r\n      <created>1651820463956</created>\r\n      <option name=\"number\" value=\"00001\" />\r\n      <option name=\"presentableId\" value=\"LOCAL-00001\" />\r\n      <option name=\"project\" value=\"LOCAL\" />\r\n      <updated>1651820463956</updated>\r\n    </task>\r\n    <task id=\"LOCAL-00002\" summary=\"Project created\">\r\n      <created>1651820818537</created>\r\n      <option name=\"number\" value=\"00002\" />\r\n      <option name=\"presentableId\" value=\"LOCAL-00002\" />\r\n      <option name=\"project\" value=\"LOCAL\" />\r\n      <updated>1651820818537</updated>\r\n    </task>\r\n    <task id=\"LOCAL-00003\" summary=\"updated version of project\">\r\n      <created>1651824571272</created>\r\n      <option name=\"number\" value=\"00003\" />\r\n      <option name=\"presentableId\" value=\"LOCAL-00003\" />\r\n      <option name=\"project\" value=\"LOCAL\" />\r\n      <updated>1651824571272</updated>\r\n    </task>\r\n    <task id=\"LOCAL-00004\" summary=\"Added Test_input file\">\r\n      <created>1651824952769</created>\r\n      <option name=\"number\" value=\"00004\" />\r\n      <option name=\"presentableId\" value=\"LOCAL-00004\" />\r\n      <option name=\"project\" value=\"LOCAL\" />\r\n      <updated>1651824952769</updated>\r\n    </task>\r\n    <task id=\"LOCAL-00005\" summary=\"interleave_shuffle done\">\r\n      <created>1651933280586</created>\r\n      <option name=\"number\" value=\"00005\" />\r\n      <option name=\"presentableId\" value=\"LOCAL-00005\" />\r\n      <option name=\"project\" value=\"LOCAL\" />\r\n      <updated>1651933280586</updated>\r\n    </task>\r\n    <option name=\"localTasksCounter\" value=\"6\" />\r\n    <servers />\r\n  </component>\r\n  <component name=\"TypeScriptGeneratedFilesManager\">\r\n    <option name=\"version\" value=\"3\" />\r\n  </component>\r\n  <component name=\"Vcs.Log.Tabs.Properties\">\r\n    <option name=\"TAB_STATES\">\r\n      <map>\r\n        <entry key=\"MAIN\">\r\n          <value>\r\n            <State />\r\n          </value>\r\n        </entry>\r\n      </map>\r\n    </option>\r\n  </component>\r\n  <component name=\"VcsManagerConfiguration\">\r\n    <MESSAGE value=\"Project created\" />\r\n    <MESSAGE value=\"updated version of project\" />\r\n    <MESSAGE value=\"Added Test_input file\" />\r\n    <MESSAGE value=\"interleave_shuffle done\" />\r\n    <option name=\"LAST_COMMIT_MESSAGE\" value=\"interleave_shuffle done\" />\r\n  </component>\r\n</project>
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/.idea/workspace.xml b/.idea/workspace.xml
+--- a/.idea/workspace.xml	(revision c3fe4f27e2af9fc3cbda4f5b17fae67d6deeed40)
++++ b/.idea/workspace.xml	(date 1652138471835)
+@@ -3,7 +3,7 @@
+   <component name="AutoImportSettings">
+     <option name="autoReloadType" value="SELECTIVE" />
+   </component>
+-  <component name="CMakeRunConfigurationManager" shouldGenerate="true" shouldDeleteObsolete="true">
++  <component name="CMakeRunConfigurationManager">
+     <generated>
+       <config projectName="Yukon_G50" targetName="Yukon_G50" />
+     </generated>
+@@ -14,10 +14,13 @@
+     </configurations>
+   </component>
+   <component name="ChangeListManager">
+-    <list default="true" id="63b0d282-5cb0-4c80-a4ec-0961bdf29197" name="Changes" comment="interleave_shuffle done">
++    <list default="true" id="63b0d282-5cb0-4c80-a4ec-0961bdf29197" name="Changes" comment="Implemented facedown cards view in print_gamestate">
+       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+       <change beforePath="$PROJECT_DIR$/cmake-build-debug/.ninja_deps" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/.ninja_deps" afterDir="false" />
+-      <change beforePath="$PROJECT_DIR$/cmake-build-debug/.ninja_log" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/.ninja_log" afterDir="false" />
++      <change beforePath="$PROJECT_DIR$/cmake-build-debug/CMakeCache.txt" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/CMakeCache.txt" afterDir="false" />
++      <change beforePath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/TargetDirectories.txt" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/TargetDirectories.txt" afterDir="false" />
++      <change beforePath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/clion-environment.txt" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/clion-environment.txt" afterDir="false" />
++      <change beforePath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/clion-log.txt" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/clion-log.txt" afterDir="false" />
+       <change beforePath="$PROJECT_DIR$/cmake-build-debug/Testing/Temporary/LastTest.log" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/Testing/Temporary/LastTest.log" afterDir="false" />
+       <change beforePath="$PROJECT_DIR$/main.c" beforeDir="false" afterPath="$PROJECT_DIR$/main.c" afterDir="false" />
+     </list>
+@@ -52,9 +55,11 @@
+     <option name="hideEmptyMiddlePackages" value="true" />
+     <option name="showLibraryContents" value="true" />
+   </component>
+-  <component name="PropertiesComponent">
+-    <property name="cmake.loaded.for.project" value="true" />
+-  </component>
++  <component name="PropertiesComponent">{
++  &quot;keyToString&quot;: {
++    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;
++  }
++}</component>
+   <component name="RunManager">
+     <configuration default="true" type="CLionExternalRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" PASS_PARENT_ENVS_2="true">
+       <method v="2">
+Index: cmake-build-debug/CMakeCache.txt
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+># This is the CMakeCache file.\r\n# For build in directory: c:/DTU/2-semester/MaskinarProgrammering/Yukon/Yukon-G50/cmake-build-debug\r\n# It was generated by CMake: C:/Program Files/JetBrains/CLion 2021.3.4/bin/cmake/win/bin/cmake.exe\r\n# You can edit this file to change values found and used by cmake.\r\n# If you do not want to change any of the values, simply exit the editor.\r\n# If you do want to change a value, simply edit, save, and exit the editor.\r\n# The syntax for the file is as follows:\r\n# KEY:TYPE=VALUE\r\n# KEY is the name of a variable in the cache.\r\n# TYPE is a hint to GUIs for the type of VALUE, DO NOT EDIT TYPE!.\r\n# VALUE is the current value for the KEY.\r\n\r\n########################\r\n# EXTERNAL cache entries\r\n########################\r\n\r\n//Path to a program.\r\nCMAKE_ADDR2LINE:FILEPATH=C:/Program Files/JetBrains/CLion 2021.3.4/bin/mingw/bin/addr2line.exe\r\n\r\n//Path to a program.\r\nCMAKE_AR:FILEPATH=C:/Program Files/JetBrains/CLion 2021.3.4/bin/mingw/bin/ar.exe\r\n\r\n//Choose the type of build, options are: None Debug Release RelWithDebInfo\r\n// MinSizeRel ...\r\nCMAKE_BUILD_TYPE:STRING=Debug\r\n\r\n//C compiler\r\nCMAKE_C_COMPILER:FILEPATH=C:/Program Files/JetBrains/CLion 2021.3.4/bin/mingw/bin/gcc.exe\r\n\r\n//A wrapper around 'ar' adding the appropriate '--plugin' option\r\n// for the GCC compiler\r\nCMAKE_C_COMPILER_AR:FILEPATH=C:/Program Files/JetBrains/CLion 2021.3.4/bin/mingw/bin/gcc-ar.exe\r\n\r\n//A wrapper around 'ranlib' adding the appropriate '--plugin' option\r\n// for the GCC compiler\r\nCMAKE_C_COMPILER_RANLIB:FILEPATH=C:/Program Files/JetBrains/CLion 2021.3.4/bin/mingw/bin/gcc-ranlib.exe\r\n\r\n//Flags used by the C compiler during all build types.\r\nCMAKE_C_FLAGS:STRING=\r\n\r\n//Flags used by the C compiler during DEBUG builds.\r\nCMAKE_C_FLAGS_DEBUG:STRING=-g\r\n\r\n//Flags used by the C compiler during MINSIZEREL builds.\r\nCMAKE_C_FLAGS_MINSIZEREL:STRING=-Os -DNDEBUG\r\n\r\n//Flags used by the C compiler during RELEASE builds.\r\nCMAKE_C_FLAGS_RELEASE:STRING=-O3 -DNDEBUG\r\n\r\n//Flags used by the C compiler during RELWITHDEBINFO builds.\r\nCMAKE_C_FLAGS_RELWITHDEBINFO:STRING=-O2 -g -DNDEBUG\r\n\r\n//Libraries linked by default with all C applications.\r\nCMAKE_C_STANDARD_LIBRARIES:STRING=-lkernel32 -luser32 -lgdi32 -lwinspool -lshell32 -lole32 -loleaut32 -luuid -lcomdlg32 -ladvapi32\r\n\r\n//Path to a program.\r\nCMAKE_DLLTOOL:FILEPATH=C:/Program Files/JetBrains/CLion 2021.3.4/bin/mingw/bin/dlltool.exe\r\n\r\n//Flags used by the linker during all build types.\r\nCMAKE_EXE_LINKER_FLAGS:STRING=\r\n\r\n//Flags used by the linker during DEBUG builds.\r\nCMAKE_EXE_LINKER_FLAGS_DEBUG:STRING=\r\n\r\n//Flags used by the linker during MINSIZEREL builds.\r\nCMAKE_EXE_LINKER_FLAGS_MINSIZEREL:STRING=\r\n\r\n//Flags used by the linker during RELEASE builds.\r\nCMAKE_EXE_LINKER_FLAGS_RELEASE:STRING=\r\n\r\n//Flags used by the linker during RELWITHDEBINFO builds.\r\nCMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO:STRING=\r\n\r\n//Enable/Disable output of compile commands during generation.\r\nCMAKE_EXPORT_COMPILE_COMMANDS:BOOL=\r\n\r\n//Convert GNU import libraries to MS format (requires Visual Studio)\r\nCMAKE_GNUtoMS:BOOL=OFF\r\n\r\n//Install path prefix, prepended onto install directories.\r\nCMAKE_INSTALL_PREFIX:PATH=C:/Program Files (x86)/Yukon_G50\r\n\r\n//Path to a program.\r\nCMAKE_LINKER:FILEPATH=C:/Program Files/JetBrains/CLion 2021.3.4/bin/mingw/bin/ld.exe\r\n\r\n//make program\r\nCMAKE_MAKE_PROGRAM:FILEPATH=C:/Program Files/JetBrains/CLion 2021.3.4/bin/ninja/win/ninja.exe\r\n\r\n//Flags used by the linker during the creation of modules during\r\n// all build types.\r\nCMAKE_MODULE_LINKER_FLAGS:STRING=\r\n\r\n//Flags used by the linker during the creation of modules during\r\n// DEBUG builds.\r\nCMAKE_MODULE_LINKER_FLAGS_DEBUG:STRING=\r\n\r\n//Flags used by the linker during the creation of modules during\r\n// MINSIZEREL builds.\r\nCMAKE_MODULE_LINKER_FLAGS_MINSIZEREL:STRING=\r\n\r\n//Flags used by the linker during the creation of modules during\r\n// RELEASE builds.\r\nCMAKE_MODULE_LINKER_FLAGS_RELEASE:STRING=\r\n\r\n//Flags used by the linker during the creation of modules during\r\n// RELWITHDEBINFO builds.\r\nCMAKE_MODULE_LINKER_FLAGS_RELWITHDEBINFO:STRING=\r\n\r\n//Path to a program.\r\nCMAKE_NM:FILEPATH=C:/Program Files/JetBrains/CLion 2021.3.4/bin/mingw/bin/nm.exe\r\n\r\n//Path to a program.\r\nCMAKE_OBJCOPY:FILEPATH=C:/Program Files/JetBrains/CLion 2021.3.4/bin/mingw/bin/objcopy.exe\r\n\r\n//Path to a program.\r\nCMAKE_OBJDUMP:FILEPATH=C:/Program Files/JetBrains/CLion 2021.3.4/bin/mingw/bin/objdump.exe\r\n\r\n//Value Computed by CMake\r\nCMAKE_PROJECT_DESCRIPTION:STATIC=\r\n\r\n//Value Computed by CMake\r\nCMAKE_PROJECT_HOMEPAGE_URL:STATIC=\r\n\r\n//Value Computed by CMake\r\nCMAKE_PROJECT_NAME:STATIC=Yukon_G50\r\n\r\n//Path to a program.\r\nCMAKE_RANLIB:FILEPATH=C:/Program Files/JetBrains/CLion 2021.3.4/bin/mingw/bin/ranlib.exe\r\n\r\n//RC compiler\r\nCMAKE_RC_COMPILER:FILEPATH=C:/Program Files/JetBrains/CLion 2021.3.4/bin/mingw/bin/windres.exe\r\n\r\n//Flags for Windows Resource Compiler during all build types.\r\nCMAKE_RC_FLAGS:STRING=\r\n\r\n//Flags for Windows Resource Compiler during DEBUG builds.\r\nCMAKE_RC_FLAGS_DEBUG:STRING=\r\n\r\n//Flags for Windows Resource Compiler during MINSIZEREL builds.\r\nCMAKE_RC_FLAGS_MINSIZEREL:STRING=\r\n\r\n//Flags for Windows Resource Compiler during RELEASE builds.\r\nCMAKE_RC_FLAGS_RELEASE:STRING=\r\n\r\n//Flags for Windows Resource Compiler during RELWITHDEBINFO builds.\r\nCMAKE_RC_FLAGS_RELWITHDEBINFO:STRING=\r\n\r\n//Path to a program.\r\nCMAKE_READELF:FILEPATH=C:/Program Files/JetBrains/CLion 2021.3.4/bin/mingw/bin/readelf.exe\r\n\r\n//Flags used by the linker during the creation of shared libraries\r\n// during all build types.\r\nCMAKE_SHARED_LINKER_FLAGS:STRING=\r\n\r\n//Flags used by the linker during the creation of shared libraries\r\n// during DEBUG builds.\r\nCMAKE_SHARED_LINKER_FLAGS_DEBUG:STRING=\r\n\r\n//Flags used by the linker during the creation of shared libraries\r\n// during MINSIZEREL builds.\r\nCMAKE_SHARED_LINKER_FLAGS_MINSIZEREL:STRING=\r\n\r\n//Flags used by the linker during the creation of shared libraries\r\n// during RELEASE builds.\r\nCMAKE_SHARED_LINKER_FLAGS_RELEASE:STRING=\r\n\r\n//Flags used by the linker during the creation of shared libraries\r\n// during RELWITHDEBINFO builds.\r\nCMAKE_SHARED_LINKER_FLAGS_RELWITHDEBINFO:STRING=\r\n\r\n//If set, runtime paths are not added when installing shared libraries,\r\n// but are added when building.\r\nCMAKE_SKIP_INSTALL_RPATH:BOOL=NO\r\n\r\n//If set, runtime paths are not added when using shared libraries.\r\nCMAKE_SKIP_RPATH:BOOL=NO\r\n\r\n//Flags used by the linker during the creation of static libraries\r\n// during all build types.\r\nCMAKE_STATIC_LINKER_FLAGS:STRING=\r\n\r\n//Flags used by the linker during the creation of static libraries\r\n// during DEBUG builds.\r\nCMAKE_STATIC_LINKER_FLAGS_DEBUG:STRING=\r\n\r\n//Flags used by the linker during the creation of static libraries\r\n// during MINSIZEREL builds.\r\nCMAKE_STATIC_LINKER_FLAGS_MINSIZEREL:STRING=\r\n\r\n//Flags used by the linker during the creation of static libraries\r\n// during RELEASE builds.\r\nCMAKE_STATIC_LINKER_FLAGS_RELEASE:STRING=\r\n\r\n//Flags used by the linker during the creation of static libraries\r\n// during RELWITHDEBINFO builds.\r\nCMAKE_STATIC_LINKER_FLAGS_RELWITHDEBINFO:STRING=\r\n\r\n//Path to a program.\r\nCMAKE_STRIP:FILEPATH=C:/Program Files/JetBrains/CLion 2021.3.4/bin/mingw/bin/strip.exe\r\n\r\n//If this value is on, makefiles will be generated without the\r\n// .SILENT directive, and all commands will be echoed to the console\r\n// during the make.  This is useful for debugging only. With Visual\r\n// Studio IDE projects all commands are done without /nologo.\r\nCMAKE_VERBOSE_MAKEFILE:BOOL=FALSE\r\n\r\n//Value Computed by CMake\r\nYukon_G50_BINARY_DIR:STATIC=C:/DTU/2-semester/MaskinarProgrammering/Yukon/Yukon-G50/cmake-build-debug\r\n\r\n//Value Computed by CMake\r\nYukon_G50_IS_TOP_LEVEL:STATIC=ON\r\n\r\n//Value Computed by CMake\r\nYukon_G50_SOURCE_DIR:STATIC=C:/DTU/2-semester/MaskinarProgrammering/Yukon/Yukon-G50\r\n\r\n\r\n########################\r\n# INTERNAL cache entries\r\n########################\r\n\r\n//ADVANCED property for variable: CMAKE_ADDR2LINE\r\nCMAKE_ADDR2LINE-ADVANCED:INTERNAL=1\r\n//ADVANCED property for variable: CMAKE_AR\r\nCMAKE_AR-ADVANCED:INTERNAL=1\r\n//This is the directory where this CMakeCache.txt was created\r\nCMAKE_CACHEFILE_DIR:INTERNAL=c:/DTU/2-semester/MaskinarProgrammering/Yukon/Yukon-G50/cmake-build-debug\r\n//Major version of cmake used to create the current loaded cache\r\nCMAKE_CACHE_MAJOR_VERSION:INTERNAL=3\r\n//Minor version of cmake used to create the current loaded cache\r\nCMAKE_CACHE_MINOR_VERSION:INTERNAL=21\r\n//Patch version of cmake used to create the current loaded cache\r\nCMAKE_CACHE_PATCH_VERSION:INTERNAL=1\r\n//Path to CMake executable.\r\nCMAKE_COMMAND:INTERNAL=C:/Program Files/JetBrains/CLion 2021.3.4/bin/cmake/win/bin/cmake.exe\r\n//Path to cpack program executable.\r\nCMAKE_CPACK_COMMAND:INTERNAL=C:/Program Files/JetBrains/CLion 2021.3.4/bin/cmake/win/bin/cpack.exe\r\n//Path to ctest program executable.\r\nCMAKE_CTEST_COMMAND:INTERNAL=C:/Program Files/JetBrains/CLion 2021.3.4/bin/cmake/win/bin/ctest.exe\r\n//ADVANCED property for variable: CMAKE_C_COMPILER\r\nCMAKE_C_COMPILER-ADVANCED:INTERNAL=1\r\n//ADVANCED property for variable: CMAKE_C_COMPILER_AR\r\nCMAKE_C_COMPILER_AR-ADVANCED:INTERNAL=1\r\n//ADVANCED property for variable: CMAKE_C_COMPILER_RANLIB\r\nCMAKE_C_COMPILER_RANLIB-ADVANCED:INTERNAL=1\r\n//ADVANCED property for variable: CMAKE_C_FLAGS\r\nCMAKE_C_FLAGS-ADVANCED:INTERNAL=1\r\n//ADVANCED property for variable: CMAKE_C_FLAGS_DEBUG\r\nCMAKE_C_FLAGS_DEBUG-ADVANCED:INTERNAL=1\r\n//ADVANCED property for variable: CMAKE_C_FLAGS_MINSIZEREL\r\nCMAKE_C_FLAGS_MINSIZEREL-ADVANCED:INTERNAL=1\r\n//ADVANCED property for variable: CMAKE_C_FLAGS_RELEASE\r\nCMAKE_C_FLAGS_RELEASE-ADVANCED:INTERNAL=1\r\n//ADVANCED property for variable: CMAKE_C_FLAGS_RELWITHDEBINFO\r\nCMAKE_C_FLAGS_RELWITHDEBINFO-ADVANCED:INTERNAL=1\r\n//ADVANCED property for variable: CMAKE_C_STANDARD_LIBRARIES\r\nCMAKE_C_STANDARD_LIBRARIES-ADVANCED:INTERNAL=1\r\n//ADVANCED property for variable: CMAKE_DLLTOOL\r\nCMAKE_DLLTOOL-ADVANCED:INTERNAL=1\r\n//Executable file format\r\nCMAKE_EXECUTABLE_FORMAT:INTERNAL=Unknown\r\n//ADVANCED property for variable: CMAKE_EXE_LINKER_FLAGS\r\nCMAKE_EXE_LINKER_FLAGS-ADVANCED:INTERNAL=1\r\n//ADVANCED property for variable: CMAKE_EXE_LINKER_FLAGS_DEBUG\r\nCMAKE_EXE_LINKER_FLAGS_DEBUG-ADVANCED:INTERNAL=1\r\n//ADVANCED property for variable: CMAKE_EXE_LINKER_FLAGS_MINSIZEREL\r\nCMAKE_EXE_LINKER_FLAGS_MINSIZEREL-ADVANCED:INTERNAL=1\r\n//ADVANCED property for variable: CMAKE_EXE_LINKER_FLAGS_RELEASE\r\nCMAKE_EXE_LINKER_FLAGS_RELEASE-ADVANCED:INTERNAL=1\r\n//ADVANCED property for variable: CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO\r\nCMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO-ADVANCED:INTERNAL=1\r\n//ADVANCED property for variable: CMAKE_EXPORT_COMPILE_COMMANDS\r\nCMAKE_EXPORT_COMPILE_COMMANDS-ADVANCED:INTERNAL=1\r\n//Name of external makefile project generator.\r\nCMAKE_EXTRA_GENERATOR:INTERNAL=\r\n//Name of generator.\r\nCMAKE_GENERATOR:INTERNAL=Ninja\r\n//Generator instance identifier.\r\nCMAKE_GENERATOR_INSTANCE:INTERNAL=\r\n//Name of generator platform.\r\nCMAKE_GENERATOR_PLATFORM:INTERNAL=\r\n//Name of generator toolset.\r\nCMAKE_GENERATOR_TOOLSET:INTERNAL=\r\n//Source directory with the top level CMakeLists.txt file for this\r\n// project\r\nCMAKE_HOME_DIRECTORY:INTERNAL=C:/DTU/2-semester/MaskinarProgrammering/Yukon/Yukon-G50\r\n//ADVANCED property for variable: CMAKE_LINKER\r\nCMAKE_LINKER-ADVANCED:INTERNAL=1\r\n//ADVANCED property for variable: CMAKE_MODULE_LINKER_FLAGS\r\nCMAKE_MODULE_LINKER_FLAGS-ADVANCED:INTERNAL=1\r\n//ADVANCED property for variable: CMAKE_MODULE_LINKER_FLAGS_DEBUG\r\nCMAKE_MODULE_LINKER_FLAGS_DEBUG-ADVANCED:INTERNAL=1\r\n//ADVANCED property for variable: CMAKE_MODULE_LINKER_FLAGS_MINSIZEREL\r\nCMAKE_MODULE_LINKER_FLAGS_MINSIZEREL-ADVANCED:INTERNAL=1\r\n//ADVANCED property for variable: CMAKE_MODULE_LINKER_FLAGS_RELEASE\r\nCMAKE_MODULE_LINKER_FLAGS_RELEASE-ADVANCED:INTERNAL=1\r\n//ADVANCED property for variable: CMAKE_MODULE_LINKER_FLAGS_RELWITHDEBINFO\r\nCMAKE_MODULE_LINKER_FLAGS_RELWITHDEBINFO-ADVANCED:INTERNAL=1\r\n//ADVANCED property for variable: CMAKE_NM\r\nCMAKE_NM-ADVANCED:INTERNAL=1\r\n//number of local generators\r\nCMAKE_NUMBER_OF_MAKEFILES:INTERNAL=1\r\n//ADVANCED property for variable: CMAKE_OBJCOPY\r\nCMAKE_OBJCOPY-ADVANCED:INTERNAL=1\r\n//ADVANCED property for variable: CMAKE_OBJDUMP\r\nCMAKE_OBJDUMP-ADVANCED:INTERNAL=1\r\n//Platform information initialized\r\nCMAKE_PLATFORM_INFO_INITIALIZED:INTERNAL=1\r\n//ADVANCED property for variable: CMAKE_RANLIB\r\nCMAKE_RANLIB-ADVANCED:INTERNAL=1\r\n//ADVANCED property for variable: CMAKE_RC_COMPILER\r\nCMAKE_RC_COMPILER-ADVANCED:INTERNAL=1\r\nCMAKE_RC_COMPILER_WORKS:INTERNAL=1\r\n//ADVANCED property for variable: CMAKE_RC_FLAGS\r\nCMAKE_RC_FLAGS-ADVANCED:INTERNAL=1\r\n//ADVANCED property for variable: CMAKE_RC_FLAGS_DEBUG\r\nCMAKE_RC_FLAGS_DEBUG-ADVANCED:INTERNAL=1\r\n//ADVANCED property for variable: CMAKE_RC_FLAGS_MINSIZEREL\r\nCMAKE_RC_FLAGS_MINSIZEREL-ADVANCED:INTERNAL=1\r\n//ADVANCED property for variable: CMAKE_RC_FLAGS_RELEASE\r\nCMAKE_RC_FLAGS_RELEASE-ADVANCED:INTERNAL=1\r\n//ADVANCED property for variable: CMAKE_RC_FLAGS_RELWITHDEBINFO\r\nCMAKE_RC_FLAGS_RELWITHDEBINFO-ADVANCED:INTERNAL=1\r\n//ADVANCED property for variable: CMAKE_READELF\r\nCMAKE_READELF-ADVANCED:INTERNAL=1\r\n//Path to CMake installation.\r\nCMAKE_ROOT:INTERNAL=C:/Program Files/JetBrains/CLion 2021.3.4/bin/cmake/win/share/cmake-3.21\r\n//ADVANCED property for variable: CMAKE_SHARED_LINKER_FLAGS\r\nCMAKE_SHARED_LINKER_FLAGS-ADVANCED:INTERNAL=1\r\n//ADVANCED property for variable: CMAKE_SHARED_LINKER_FLAGS_DEBUG\r\nCMAKE_SHARED_LINKER_FLAGS_DEBUG-ADVANCED:INTERNAL=1\r\n//ADVANCED property for variable: CMAKE_SHARED_LINKER_FLAGS_MINSIZEREL\r\nCMAKE_SHARED_LINKER_FLAGS_MINSIZEREL-ADVANCED:INTERNAL=1\r\n//ADVANCED property for variable: CMAKE_SHARED_LINKER_FLAGS_RELEASE\r\nCMAKE_SHARED_LINKER_FLAGS_RELEASE-ADVANCED:INTERNAL=1\r\n//ADVANCED property for variable: CMAKE_SHARED_LINKER_FLAGS_RELWITHDEBINFO\r\nCMAKE_SHARED_LINKER_FLAGS_RELWITHDEBINFO-ADVANCED:INTERNAL=1\r\n//ADVANCED property for variable: CMAKE_SKIP_INSTALL_RPATH\r\nCMAKE_SKIP_INSTALL_RPATH-ADVANCED:INTERNAL=1\r\n//ADVANCED property for variable: CMAKE_SKIP_RPATH\r\nCMAKE_SKIP_RPATH-ADVANCED:INTERNAL=1\r\n//ADVANCED property for variable: CMAKE_STATIC_LINKER_FLAGS\r\nCMAKE_STATIC_LINKER_FLAGS-ADVANCED:INTERNAL=1\r\n//ADVANCED property for variable: CMAKE_STATIC_LINKER_FLAGS_DEBUG\r\nCMAKE_STATIC_LINKER_FLAGS_DEBUG-ADVANCED:INTERNAL=1\r\n//ADVANCED property for variable: CMAKE_STATIC_LINKER_FLAGS_MINSIZEREL\r\nCMAKE_STATIC_LINKER_FLAGS_MINSIZEREL-ADVANCED:INTERNAL=1\r\n//ADVANCED property for variable: CMAKE_STATIC_LINKER_FLAGS_RELEASE\r\nCMAKE_STATIC_LINKER_FLAGS_RELEASE-ADVANCED:INTERNAL=1\r\n//ADVANCED property for variable: CMAKE_STATIC_LINKER_FLAGS_RELWITHDEBINFO\r\nCMAKE_STATIC_LINKER_FLAGS_RELWITHDEBINFO-ADVANCED:INTERNAL=1\r\n//ADVANCED property for variable: CMAKE_STRIP\r\nCMAKE_STRIP-ADVANCED:INTERNAL=1\r\n//ADVANCED property for variable: CMAKE_VERBOSE_MAKEFILE\r\nCMAKE_VERBOSE_MAKEFILE-ADVANCED:INTERNAL=1\r\n\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/cmake-build-debug/CMakeCache.txt b/cmake-build-debug/CMakeCache.txt
+--- a/cmake-build-debug/CMakeCache.txt	(revision c3fe4f27e2af9fc3cbda4f5b17fae67d6deeed40)
++++ b/cmake-build-debug/CMakeCache.txt	(date 1651831072410)
+@@ -1,6 +1,6 @@
+ # This is the CMakeCache file.
+-# For build in directory: c:/DTU/2-semester/MaskinarProgrammering/Yukon/Yukon-G50/cmake-build-debug
+-# It was generated by CMake: C:/Program Files/JetBrains/CLion 2021.3.4/bin/cmake/win/bin/cmake.exe
++# For build in directory: c:/Users/emil1/OneDrive/Documents/GitHub/Yukon-G50/cmake-build-debug
++# It was generated by CMake: C:/Program Files/JetBrains/CLion 2022.1/bin/cmake/win/bin/cmake.exe
+ # You can edit this file to change values found and used by cmake.
+ # If you do not want to change any of the values, simply exit the editor.
+ # If you do want to change a value, simply edit, save, and exit the editor.
+@@ -15,25 +15,25 @@
+ ########################
+ 
+ //Path to a program.
+-CMAKE_ADDR2LINE:FILEPATH=C:/Program Files/JetBrains/CLion 2021.3.4/bin/mingw/bin/addr2line.exe
++CMAKE_ADDR2LINE:FILEPATH=C:/Program Files/JetBrains/CLion 2022.1/bin/mingw/bin/addr2line.exe
+ 
+ //Path to a program.
+-CMAKE_AR:FILEPATH=C:/Program Files/JetBrains/CLion 2021.3.4/bin/mingw/bin/ar.exe
++CMAKE_AR:FILEPATH=C:/Program Files/JetBrains/CLion 2022.1/bin/mingw/bin/ar.exe
+ 
+ //Choose the type of build, options are: None Debug Release RelWithDebInfo
+ // MinSizeRel ...
+ CMAKE_BUILD_TYPE:STRING=Debug
+ 
+ //C compiler
+-CMAKE_C_COMPILER:FILEPATH=C:/Program Files/JetBrains/CLion 2021.3.4/bin/mingw/bin/gcc.exe
++CMAKE_C_COMPILER:FILEPATH=C:/Program Files/JetBrains/CLion 2022.1/bin/mingw/bin/gcc.exe
+ 
+ //A wrapper around 'ar' adding the appropriate '--plugin' option
+ // for the GCC compiler
+-CMAKE_C_COMPILER_AR:FILEPATH=C:/Program Files/JetBrains/CLion 2021.3.4/bin/mingw/bin/gcc-ar.exe
++CMAKE_C_COMPILER_AR:FILEPATH=C:/Program Files/JetBrains/CLion 2022.1/bin/mingw/bin/gcc-ar.exe
+ 
+ //A wrapper around 'ranlib' adding the appropriate '--plugin' option
+ // for the GCC compiler
+-CMAKE_C_COMPILER_RANLIB:FILEPATH=C:/Program Files/JetBrains/CLion 2021.3.4/bin/mingw/bin/gcc-ranlib.exe
++CMAKE_C_COMPILER_RANLIB:FILEPATH=C:/Program Files/JetBrains/CLion 2022.1/bin/mingw/bin/gcc-ranlib.exe
+ 
+ //Flags used by the C compiler during all build types.
+ CMAKE_C_FLAGS:STRING=
+@@ -54,7 +54,7 @@
+ CMAKE_C_STANDARD_LIBRARIES:STRING=-lkernel32 -luser32 -lgdi32 -lwinspool -lshell32 -lole32 -loleaut32 -luuid -lcomdlg32 -ladvapi32
+ 
+ //Path to a program.
+-CMAKE_DLLTOOL:FILEPATH=C:/Program Files/JetBrains/CLion 2021.3.4/bin/mingw/bin/dlltool.exe
++CMAKE_DLLTOOL:FILEPATH=C:/Program Files/JetBrains/CLion 2022.1/bin/mingw/bin/dlltool.exe
+ 
+ //Flags used by the linker during all build types.
+ CMAKE_EXE_LINKER_FLAGS:STRING=
+@@ -81,10 +81,10 @@
+ CMAKE_INSTALL_PREFIX:PATH=C:/Program Files (x86)/Yukon_G50
+ 
+ //Path to a program.
+-CMAKE_LINKER:FILEPATH=C:/Program Files/JetBrains/CLion 2021.3.4/bin/mingw/bin/ld.exe
++CMAKE_LINKER:FILEPATH=C:/Program Files/JetBrains/CLion 2022.1/bin/mingw/bin/ld.exe
+ 
+ //make program
+-CMAKE_MAKE_PROGRAM:FILEPATH=C:/Program Files/JetBrains/CLion 2021.3.4/bin/ninja/win/ninja.exe
++CMAKE_MAKE_PROGRAM:FILEPATH=C:/Program Files/JetBrains/CLion 2022.1/bin/ninja/win/ninja.exe
+ 
+ //Flags used by the linker during the creation of modules during
+ // all build types.
+@@ -107,13 +107,13 @@
+ CMAKE_MODULE_LINKER_FLAGS_RELWITHDEBINFO:STRING=
+ 
+ //Path to a program.
+-CMAKE_NM:FILEPATH=C:/Program Files/JetBrains/CLion 2021.3.4/bin/mingw/bin/nm.exe
++CMAKE_NM:FILEPATH=C:/Program Files/JetBrains/CLion 2022.1/bin/mingw/bin/nm.exe
+ 
+ //Path to a program.
+-CMAKE_OBJCOPY:FILEPATH=C:/Program Files/JetBrains/CLion 2021.3.4/bin/mingw/bin/objcopy.exe
++CMAKE_OBJCOPY:FILEPATH=C:/Program Files/JetBrains/CLion 2022.1/bin/mingw/bin/objcopy.exe
+ 
+ //Path to a program.
+-CMAKE_OBJDUMP:FILEPATH=C:/Program Files/JetBrains/CLion 2021.3.4/bin/mingw/bin/objdump.exe
++CMAKE_OBJDUMP:FILEPATH=C:/Program Files/JetBrains/CLion 2022.1/bin/mingw/bin/objdump.exe
+ 
+ //Value Computed by CMake
+ CMAKE_PROJECT_DESCRIPTION:STATIC=
+@@ -125,10 +125,10 @@
+ CMAKE_PROJECT_NAME:STATIC=Yukon_G50
+ 
+ //Path to a program.
+-CMAKE_RANLIB:FILEPATH=C:/Program Files/JetBrains/CLion 2021.3.4/bin/mingw/bin/ranlib.exe
++CMAKE_RANLIB:FILEPATH=C:/Program Files/JetBrains/CLion 2022.1/bin/mingw/bin/ranlib.exe
+ 
+ //RC compiler
+-CMAKE_RC_COMPILER:FILEPATH=C:/Program Files/JetBrains/CLion 2021.3.4/bin/mingw/bin/windres.exe
++CMAKE_RC_COMPILER:FILEPATH=C:/Program Files/JetBrains/CLion 2022.1/bin/mingw/bin/windres.exe
+ 
+ //Flags for Windows Resource Compiler during all build types.
+ CMAKE_RC_FLAGS:STRING=
+@@ -146,7 +146,7 @@
+ CMAKE_RC_FLAGS_RELWITHDEBINFO:STRING=
+ 
+ //Path to a program.
+-CMAKE_READELF:FILEPATH=C:/Program Files/JetBrains/CLion 2021.3.4/bin/mingw/bin/readelf.exe
++CMAKE_READELF:FILEPATH=C:/Program Files/JetBrains/CLion 2022.1/bin/mingw/bin/readelf.exe
+ 
+ //Flags used by the linker during the creation of shared libraries
+ // during all build types.
+@@ -196,7 +196,7 @@
+ CMAKE_STATIC_LINKER_FLAGS_RELWITHDEBINFO:STRING=
+ 
+ //Path to a program.
+-CMAKE_STRIP:FILEPATH=C:/Program Files/JetBrains/CLion 2021.3.4/bin/mingw/bin/strip.exe
++CMAKE_STRIP:FILEPATH=C:/Program Files/JetBrains/CLion 2022.1/bin/mingw/bin/strip.exe
+ 
+ //If this value is on, makefiles will be generated without the
+ // .SILENT directive, and all commands will be echoed to the console
+@@ -205,13 +205,13 @@
+ CMAKE_VERBOSE_MAKEFILE:BOOL=FALSE
+ 
+ //Value Computed by CMake
+-Yukon_G50_BINARY_DIR:STATIC=C:/DTU/2-semester/MaskinarProgrammering/Yukon/Yukon-G50/cmake-build-debug
++Yukon_G50_BINARY_DIR:STATIC=C:/Users/emil1/OneDrive/Documents/GitHub/Yukon-G50/cmake-build-debug
+ 
+ //Value Computed by CMake
+ Yukon_G50_IS_TOP_LEVEL:STATIC=ON
+ 
+ //Value Computed by CMake
+-Yukon_G50_SOURCE_DIR:STATIC=C:/DTU/2-semester/MaskinarProgrammering/Yukon/Yukon-G50
++Yukon_G50_SOURCE_DIR:STATIC=C:/Users/emil1/OneDrive/Documents/GitHub/Yukon-G50
+ 
+ 
+ ########################
+@@ -223,19 +223,19 @@
+ //ADVANCED property for variable: CMAKE_AR
+ CMAKE_AR-ADVANCED:INTERNAL=1
+ //This is the directory where this CMakeCache.txt was created
+-CMAKE_CACHEFILE_DIR:INTERNAL=c:/DTU/2-semester/MaskinarProgrammering/Yukon/Yukon-G50/cmake-build-debug
++CMAKE_CACHEFILE_DIR:INTERNAL=c:/Users/emil1/OneDrive/Documents/GitHub/Yukon-G50/cmake-build-debug
+ //Major version of cmake used to create the current loaded cache
+ CMAKE_CACHE_MAJOR_VERSION:INTERNAL=3
+ //Minor version of cmake used to create the current loaded cache
+-CMAKE_CACHE_MINOR_VERSION:INTERNAL=21
++CMAKE_CACHE_MINOR_VERSION:INTERNAL=22
+ //Patch version of cmake used to create the current loaded cache
+-CMAKE_CACHE_PATCH_VERSION:INTERNAL=1
++CMAKE_CACHE_PATCH_VERSION:INTERNAL=3
+ //Path to CMake executable.
+-CMAKE_COMMAND:INTERNAL=C:/Program Files/JetBrains/CLion 2021.3.4/bin/cmake/win/bin/cmake.exe
++CMAKE_COMMAND:INTERNAL=C:/Program Files/JetBrains/CLion 2022.1/bin/cmake/win/bin/cmake.exe
+ //Path to cpack program executable.
+-CMAKE_CPACK_COMMAND:INTERNAL=C:/Program Files/JetBrains/CLion 2021.3.4/bin/cmake/win/bin/cpack.exe
++CMAKE_CPACK_COMMAND:INTERNAL=C:/Program Files/JetBrains/CLion 2022.1/bin/cmake/win/bin/cpack.exe
+ //Path to ctest program executable.
+-CMAKE_CTEST_COMMAND:INTERNAL=C:/Program Files/JetBrains/CLion 2021.3.4/bin/cmake/win/bin/ctest.exe
++CMAKE_CTEST_COMMAND:INTERNAL=C:/Program Files/JetBrains/CLion 2022.1/bin/cmake/win/bin/ctest.exe
+ //ADVANCED property for variable: CMAKE_C_COMPILER
+ CMAKE_C_COMPILER-ADVANCED:INTERNAL=1
+ //ADVANCED property for variable: CMAKE_C_COMPILER_AR
+@@ -282,7 +282,7 @@
+ CMAKE_GENERATOR_TOOLSET:INTERNAL=
+ //Source directory with the top level CMakeLists.txt file for this
+ // project
+-CMAKE_HOME_DIRECTORY:INTERNAL=C:/DTU/2-semester/MaskinarProgrammering/Yukon/Yukon-G50
++CMAKE_HOME_DIRECTORY:INTERNAL=C:/Users/emil1/OneDrive/Documents/GitHub/Yukon-G50
+ //ADVANCED property for variable: CMAKE_LINKER
+ CMAKE_LINKER-ADVANCED:INTERNAL=1
+ //ADVANCED property for variable: CMAKE_MODULE_LINKER_FLAGS
+@@ -323,7 +323,7 @@
+ //ADVANCED property for variable: CMAKE_READELF
+ CMAKE_READELF-ADVANCED:INTERNAL=1
+ //Path to CMake installation.
+-CMAKE_ROOT:INTERNAL=C:/Program Files/JetBrains/CLion 2021.3.4/bin/cmake/win/share/cmake-3.21
++CMAKE_ROOT:INTERNAL=C:/Program Files/JetBrains/CLion 2022.1/bin/cmake/win/share/cmake-3.22
+ //ADVANCED property for variable: CMAKE_SHARED_LINKER_FLAGS
+ CMAKE_SHARED_LINKER_FLAGS-ADVANCED:INTERNAL=1
+ //ADVANCED property for variable: CMAKE_SHARED_LINKER_FLAGS_DEBUG
+Index: cmake-build-debug/CMakeFiles/TargetDirectories.txt
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>C:/DTU/2-semester/MaskinarProgrammering/Yukon/Yukon-G50/cmake-build-debug/CMakeFiles/Yukon_G50.dir\r\nC:/DTU/2-semester/MaskinarProgrammering/Yukon/Yukon-G50/cmake-build-debug/CMakeFiles/edit_cache.dir\r\nC:/DTU/2-semester/MaskinarProgrammering/Yukon/Yukon-G50/cmake-build-debug/CMakeFiles/rebuild_cache.dir\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/cmake-build-debug/CMakeFiles/TargetDirectories.txt b/cmake-build-debug/CMakeFiles/TargetDirectories.txt
+--- a/cmake-build-debug/CMakeFiles/TargetDirectories.txt	(revision c3fe4f27e2af9fc3cbda4f5b17fae67d6deeed40)
++++ b/cmake-build-debug/CMakeFiles/TargetDirectories.txt	(date 1651831072430)
+@@ -1,3 +1,3 @@
+-C:/DTU/2-semester/MaskinarProgrammering/Yukon/Yukon-G50/cmake-build-debug/CMakeFiles/Yukon_G50.dir
+-C:/DTU/2-semester/MaskinarProgrammering/Yukon/Yukon-G50/cmake-build-debug/CMakeFiles/edit_cache.dir
+-C:/DTU/2-semester/MaskinarProgrammering/Yukon/Yukon-G50/cmake-build-debug/CMakeFiles/rebuild_cache.dir
++C:/Users/emil1/OneDrive/Documents/GitHub/Yukon-G50/cmake-build-debug/CMakeFiles/Yukon_G50.dir
++C:/Users/emil1/OneDrive/Documents/GitHub/Yukon-G50/cmake-build-debug/CMakeFiles/edit_cache.dir
++C:/Users/emil1/OneDrive/Documents/GitHub/Yukon-G50/cmake-build-debug/CMakeFiles/rebuild_cache.dir
+Index: cmake-build-debug/CMakeFiles/clion-environment.txt
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>ToolSet: w64 9.0 (local)@C:\\Program Files\\JetBrains\\CLion 2021.3.4\\bin\\mingw\r\nOptions: \r\n\r\nOptions:-DCMAKE_MAKE_PROGRAM=C:/Program Files/JetBrains/CLion 2021.3.4/bin/ninja/win/ninja.exe
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/cmake-build-debug/CMakeFiles/clion-environment.txt b/cmake-build-debug/CMakeFiles/clion-environment.txt
+--- a/cmake-build-debug/CMakeFiles/clion-environment.txt	(revision c3fe4f27e2af9fc3cbda4f5b17fae67d6deeed40)
++++ b/cmake-build-debug/CMakeFiles/clion-environment.txt	(date 1651831068051)
+@@ -1,4 +1,4 @@
+-ToolSet: w64 9.0 (local)@C:\Program Files\JetBrains\CLion 2021.3.4\bin\mingw
++ToolSet: w64 9.0 (local)@C:\Program Files\JetBrains\CLion 2022.1\bin\mingw
+ Options: 
+ 
+-Options:-DCMAKE_MAKE_PROGRAM=C:/Program Files/JetBrains/CLion 2021.3.4/bin/ninja/win/ninja.exe
+\ No newline at end of file
++Options:-DCMAKE_MAKE_PROGRAM=C:/Program Files/JetBrains/CLion 2022.1/bin/ninja/win/ninja.exe
+\ No newline at end of file
