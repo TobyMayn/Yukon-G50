@@ -708,7 +708,7 @@ void startup_phase() {
     char input[10];
     char *lastcommand = input;
     char filename[155];
-    Card *initial_deck = NULL;
+    Card *initial_deck;
     Card *shuffled_deck = NULL;
     while (!play) {
         printf("\n");
@@ -725,7 +725,7 @@ void startup_phase() {
 
             if (strcmp(filename,"default") == 0) {
                 char *strarr = "C:\\Users\\emil1\\OneDrive\\Documents\\GitHub\\Yukon-G50\\Test_input.txt";
-                initial_deck = load_deck(strarr);
+                initial_deck = default_deck();
             }else {
                 initial_deck = load_deck(filename);
             }
@@ -819,6 +819,8 @@ void play_phase(){
             redo();
         else{
             move(input);
+            if(game_won())
+                return;
         }
 
         lastcommand = input;

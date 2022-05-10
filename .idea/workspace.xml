@@ -15,7 +15,10 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="63b0d282-5cb0-4c80-a4ec-0961bdf29197" name="Changes" comment="Added redo function">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/cmake-build-debug/.ninja_deps" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/.ninja_deps" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmake-build-debug/.ninja_log" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/.ninja_log" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmake-build-debug/Testing/Temporary/LastTest.log" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/Testing/Temporary/LastTest.log" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/main.c" beforeDir="false" afterPath="$PROJECT_DIR$/main.c" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -176,7 +179,14 @@
       <option name="project" value="LOCAL" />
       <updated>1652171406473</updated>
     </task>
-    <option name="localTasksCounter" value="14" />
+    <task id="LOCAL-00014" summary="Added redo function">
+      <created>1652186764284</created>
+      <option name="number" value="00014" />
+      <option name="presentableId" value="LOCAL-00014" />
+      <option name="project" value="LOCAL" />
+      <updated>1652186764284</updated>
+    </task>
+    <option name="localTasksCounter" value="15" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -204,6 +214,7 @@
     <MESSAGE value="gamelogic fixed" />
     <MESSAGE value="bugfix" />
     <MESSAGE value="bugfix + added flair" />
-    <option name="LAST_COMMIT_MESSAGE" value="bugfix + added flair" />
+    <MESSAGE value="Added redo function" />
+    <option name="LAST_COMMIT_MESSAGE" value="Added redo function" />
   </component>
 </project>
