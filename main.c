@@ -46,14 +46,19 @@ Card *new_card(char rank, char suit){
 
 struct moves {
     Moves *prev;
-    char *command;
+    char command[10];
 };
 
 //moves will be implemented as a stack, hence why there is only a pointer to a prev node.
 Moves *new_move(char *command){
     Moves *moves = (Moves *)malloc(sizeof(Moves));
     moves->prev = NULL;
-    moves->command = command;
+    int i = 0;
+    while(*command != '\0'){
+        moves->command[i] = *command;
+        command++;
+        i++;
+    }
     return moves;
 }
 
@@ -141,7 +146,7 @@ Card *load_deck(char* filename){
 void *save_cards(Card *deck, char* filename){
     FILE* ptr;
 
-    ptr = fopen(filename, "w");
+    ptr = fopen(filename, "w+");
     do {
         deck = deck->next;
         fprintf(ptr,"%c%c\n", deck->rank, deck->suit);
@@ -378,19 +383,20 @@ Card *random_shuffle(Card *deck){
 }
 
 void undo(){
-    if(latest->command == "UNDO"){
+    if(strcmp(latest->command,"UNDO") == 0){
         error_message();
         return;
     }//checks for dummy card
 
-    char *command = latest->command;
-    Card *topile = get_pile(command[0],command[1]);
 
-    int strlen = find_string_length(command);
+    Card *topile = get_pile(latest->command[0],latest->command[1]);
+
+    int strlen = find_string_length(latest->command);
 
     if(strlen == 9) {
-        Card *frompile = get_pile(command[7], command[8]);
-        Card *fromcard = find_card(command[3],command[4],frompile);
+        printf("hejjjejej");
+        Card *frompile = get_pile(latest->command[7], latest->command[8]);
+        Card *fromcard = find_card(latest->command[3],latest->command[4],frompile);
         Card *tocard = topile;
         while(tocard->next != topile) {
             tocard = tocard->next;
@@ -398,7 +404,7 @@ void undo(){
         move_bunch(fromcard,frompile,tocard,topile);
     }
     else{
-        Card *frompile = get_pile(command[4],command[5]);
+        Card *frompile = get_pile(latest->command[4],latest->command[5]);
         Card *from = frompile;
         Card *to = topile;
         while(from->next != frompile){
@@ -412,7 +418,6 @@ void undo(){
     //making the pointer point to the latest move command.
     Moves *temp = latest;
     latest = temp->prev;
-    free(temp); //deleting the node from memory.
 }
 
 //the foundations will not have a predefined suit. The suit of the foundation will be defined by the first card moved to it.
@@ -517,7 +522,7 @@ void pile_to_pile(char *command,Card *pointer) {
         error_message();
 }
 
-void move(const char *command) {
+void move(char *command) {
     Card *pile = get_pile(command[0], command[1]);//gets pointer of list to move from
     if (pile == NULL) {
         error_message();//if the get_pile method returns a null pointer we return to caller with error message
@@ -765,6 +770,7 @@ void startup_phase() {
         }else if(input[0] == 'p'){
             setup_columns_foundations();
             distribute_cards(shuffled_deck);
+            initialize_undo();
             play = true;
 
         }else
@@ -787,7 +793,6 @@ bool game_won(){
 void play_phase(){
     char input[10];
     char *lastcommand = input;
-    initialize_undo();
     while(play){
         printf("\n");
         print_gamestate();
