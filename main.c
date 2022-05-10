@@ -7,6 +7,7 @@
 #include <time.h>
 #include <stdlib.h>
 #include <limits.h>
+#include <unistd.h>
 
 
 typedef struct card Card;
@@ -757,17 +758,15 @@ void startup_phase() {
             shuffled_deck = random_shuffle(initial_deck);
 
         }else if(strcmp(input, "sd") == 0){
-            char *save_filename;
-            printf("Enter filename of file to be saved,\n"
-                   " or enter 'default' to use default filename cards.txt: ");
-            scanf("%s", &save_filename);
-
-            if (strcmp(save_filename,"default") == 0) {
-                char *savefiletemp = "C:\\Users\\emil1\\OneDrive\\Documents\\GitHub\\Yukon-G50\\cards.txt";
-                save_cards(shuffled_deck, savefiletemp);
-            }else{
-                save_cards(shuffled_deck, save_filename);
+            char* saving = "...";
+            printf("Saving cards");
+            for (int i = 0; i < 3; ++i) {
+                sleep(0);
+                printf("%c", saving[i]);
             }
+            printf("\n");
+            char *savefilename = "C:\\Users\\emil1\\OneDrive\\Documents\\GitHub\\Yukon-G50\\cards.txt";
+            save_cards(shuffled_deck, savefilename);
 
         }else if(strcmp(input, "qq") == 0){
             exit(0);
