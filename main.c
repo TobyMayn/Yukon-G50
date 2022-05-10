@@ -27,6 +27,7 @@ Card *foundations[4];
 Card *columns[7];
 //header pointing at moves struct, used in undo command
 Moves *latest;
+char redo_command[10];
 
 struct card {
     Card *prev;
@@ -48,6 +49,11 @@ struct moves {
     Moves *prev;
     char command[10];
 };
+
+void redo(
+        );
+
+void update_redo();
 
 //moves will be implemented as a stack, hence why there is only a pointer to a prev node.
 Moves *new_move(char *command){
@@ -394,7 +400,6 @@ void undo(){
     int strlen = find_string_length(latest->command);
 
     if(strlen == 9) {
-        printf("hejjjejej");
         Card *frompile = get_pile(latest->command[7], latest->command[8]);
         Card *fromcard = find_card(latest->command[3],latest->command[4],frompile);
         Card *tocard = topile;
@@ -789,6 +794,15 @@ bool game_won(){
     }
     return gamewon;
 }
+void redo() {
+    move(redo_command);
+}
+
+void update_redo() {
+    for (int i = 0; i < sizeof(latest->command) / sizeof(latest->command[0]); ++i) {
+        redo_command[i] = latest->command[i];
+    }
+}
 
 void play_phase(){
     char input[10];
@@ -801,10 +815,14 @@ void play_phase(){
         printf("Enter command: ");
         scanf("%s", &input);
 
-        if(input[0] == 'u')
+        if(input[0] == 'u' || input[0] == 'U') {
+            update_redo();
             undo();
-        else if(input[0] == 'q')
+        }
+        else if(input[0] == 'q' || input[0] == 'Q')
             play = false;
+        else if(input[0] == 'r' || input[0] == 'R')
+            redo();
         else{
             move(input);
         }
