@@ -51,11 +51,6 @@ struct moves {
     char command[10];
 };
 
-void redo(
-        );
-
-void update_redo();
-
 //moves will be implemented as a stack, hence why there is only a pointer to a prev node.
 Moves *new_move(char *command){
     Moves *moves = (Moves *)malloc(sizeof(Moves));
@@ -395,7 +390,6 @@ void undo(){
         return;
     }//checks for dummy card
 
-
     Card *topile = get_pile(latest->command[0],latest->command[1]);
 
     int strlen = find_string_length(latest->command);
@@ -424,6 +418,7 @@ void undo(){
     //making the pointer point to the latest move command.
     Moves *temp = latest;
     latest = temp->prev;
+    free(temp);
 }
 
 //the foundations will not have a predefined suit. The suit of the foundation will be defined by the first card moved to it.
