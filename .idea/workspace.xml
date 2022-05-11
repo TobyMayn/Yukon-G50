@@ -14,12 +14,9 @@
     </configurations>
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="63b0d282-5cb0-4c80-a4ec-0961bdf29197" name="Changes" comment="Added redo function">
+    <list default="true" id="63b0d282-5cb0-4c80-a4ec-0961bdf29197" name="Changes" comment="Sidste ændringer">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cmake-build-debug/.ninja_deps" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/.ninja_deps" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cmake-build-debug/.ninja_log" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/.ninja_log" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/cmake-build-debug/Testing/Temporary/LastTest.log" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/Testing/Temporary/LastTest.log" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/main.c" beforeDir="false" afterPath="$PROJECT_DIR$/main.c" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -54,17 +51,18 @@
   </component>
   <component name="PropertiesComponent"><![CDATA[{
   "keyToString": {
+    "RunOnceActivity.cidr.known.project.marker": "true",
+    "WebServerToolWindowFactoryState": "false",
+    "cf.first.check.clang-format": "false",
+    "cidr.known.project.marker": "true",
     "cmake.loaded.for.project": "true",
+    "node.js.detected.package.eslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
     "node.js.selected.package.tslint": "(autodetect)"
   }
 }]]></component>
   <component name="RunManager">
     <configuration name="Yukon_G50" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="Yukon_G50" TARGET_NAME="Yukon_G50" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="Yukon_G50" RUN_TARGET_NAME="Yukon_G50">
-      <method v="2">
-        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
-      </method>
-    </configuration>
-    <configuration default="true" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" PASS_PARENT_ENVS_2="true">
       <method v="2">
         <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
       </method>
@@ -87,6 +85,7 @@
       <workItem from="1652011086391" duration="7314000" />
       <workItem from="1652091448129" duration="7902000" />
       <workItem from="1652178786384" duration="1000" />
+      <workItem from="1652282587497" duration="2819000" />
     </task>
     <task id="LOCAL-00001" summary="Project created">
       <created>1651820463956</created>
@@ -186,7 +185,21 @@
       <option name="project" value="LOCAL" />
       <updated>1652186764284</updated>
     </task>
-    <option name="localTasksCounter" value="15" />
+    <task id="LOCAL-00015" summary="Sidste ændringer">
+      <created>1652207194141</created>
+      <option name="number" value="00015" />
+      <option name="presentableId" value="LOCAL-00015" />
+      <option name="project" value="LOCAL" />
+      <updated>1652207194141</updated>
+    </task>
+    <task id="LOCAL-00016" summary="Sidste ændringer">
+      <created>1652207229006</created>
+      <option name="number" value="00016" />
+      <option name="presentableId" value="LOCAL-00016" />
+      <option name="project" value="LOCAL" />
+      <updated>1652207229006</updated>
+    </task>
+    <option name="localTasksCounter" value="17" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -215,6 +228,7 @@
     <MESSAGE value="bugfix" />
     <MESSAGE value="bugfix + added flair" />
     <MESSAGE value="Added redo function" />
-    <option name="LAST_COMMIT_MESSAGE" value="Added redo function" />
+    <MESSAGE value="Sidste ændringer" />
+    <option name="LAST_COMMIT_MESSAGE" value="Sidste ændringer" />
   </component>
 </project>

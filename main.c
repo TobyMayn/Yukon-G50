@@ -233,6 +233,7 @@ void move_card(Card *from,Card *to){
     temp->next = to->next;
     to->next = temp;
     temp->prev = to;
+    temp->next->prev = temp;
 }
 
 // Helper method for interleave_shuffle
